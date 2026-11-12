@@ -1356,7 +1356,7 @@ RunService.RenderStepped:Connect(function()
 	-- 9. Entity ESP (Vermelho)
 	pcall(function()
 		for _, v in ipairs(workspace:GetChildren()) do
-			if v:IsA("Model") and (v.Name == "RushMoving" or v.Name == "AmbushMoving" or v.Name == "Eyes" or v.Name == "Halt" or v.Name == "Figure" or v.Name == "SeekRig" or v.Name == "Glitch" or v.Name == "A60" or v.Name == "A90") then
+			if v:IsA("Model") and (v.Name == "RushMoving" or v.Name == "AmbushMoving" or v.Name == "Eyes" or v.Name == "Halt" or v.Name == "Figure" or v.Name == "SeekRig" or v.Name == "Glitch" or v.Name == "A60" or v.Name == "A90" or v.Name == "Bash" or v.Name == "Scribbles") then
 				local part = v.PrimaryPart or v:FindFirstChildWhichIsA("BasePart")
 				if part then
 					if settings.EntityESP then
@@ -1443,63 +1443,68 @@ RunService.RenderStepped:Connect(function()
 		end)
 	end
 
-	-- 12. Notify Items (Excluindo moedas, bandagens, velas e copos de cerveja)
+	-- 12. Notify Items Corrigido (Baseado na estrutura exata do Item ESP)
 	if settings.NotifyItems then
 		pcall(function()
-			local currentRooms = workspace:FindFirstChild("CurrentRooms")
-			if currentRooms then
-				for _, room in ipairs(currentRooms:GetChildren()) do
-					local assets = room:FindFirstChild("Assets") or room
-					for _, obj in ipairs(assets:GetDescendants()) do
-						if (obj:IsA("Model") or obj:IsA("BasePart")) and obj:FindFirstChildOfClass("ProximityPrompt") then
-							local nameL = obj.Name:lower()
-							local isExcluded = nameL:find("coin") or nameL:find("bandage") or nameL:find("candle") or nameL:find("beer") or nameL:find("glowstick")
-
-							if not isExcluded and not notifiedItems[obj] then
-								notifiedItems[obj] = true
-								ShowNotification("Item Spawned: " .. obj.Name)
-							end
-						end
-					end
-				end
-			end
+            local currentRooms = workspace:FindFirstChild("CurrentRooms")
+            if currentRooms then
+                for _, room in ipairs(currentRooms:GetChildren()) do
+                    local assets = room:FindFirstChild("Assets")
+                    if assets then
+                        for _, obj in ipairs(assets:GetDescendants()) do
+                            if obj:IsA("Model") then
+                                local handle = obj:FindFirstChild("Handle")
+                                local grab = obj:FindFirstChild("Grab")
+                                
+                                if handle and handle:IsA("MeshPart") and grab and grab:IsA("BindableEvent") then
+                                    if not notifiedItems[obj] then
+                                        notifiedItems[obj] = true
+                                        ShowNotification("Item Spawned: " .. obj.Name)
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
 		end)
 	end
-	
-	-- 13. Infinite Items (Lockpick, Multitool, Shears, SkeletonKey)
-	pcall(function()
-		if settings.InfiniteItems then
-			local char = LocalPlayer.Character
-			local humanoidRootPart = char and char:FindFirstChild("HumanoidRootPart")
-			local tool = char and char:FindFirstChildOfClass("Tool")
+end)
 
-			if tool and humanoidRootPart then
-				local toolName = tool.Name
-				if toolName == "Lockpick" or toolName == "Multitool" or toolName == "Shears" or toolName == "SkeletonKey" then
-					-- Detecta se o player está ativando/usando a ferramenta
-					if tool:FindFirstChild("Activated") or tool:FindFirstChild("Using") or UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
-						if not tool:GetAttribute("IsDuplicating") then
-							tool:SetAttribute("IsDuplicating", true)
-							task.spawn(function()
-								local currentPos = humanoidRootPart.CFrame
-								-- Dropar a ferramenta
-								tool.Parent = workspace
-								task.wait(0.15)
-								-- Pegar de volta
-								if tool and tool.Parent == workspace then
-									tool.Parent = char
-								end
-								task.wait(0.5)
-								if tool then
-									tool:SetAttribute("IsDuplicating", nil)
-								end
-							end)
-						end
-					end
-				end
-			end
-		end
-	end)
+-- ==================== INFINITE ITEMS CORRIGIDO ====================
+local connectedTools = {}
+task.spawn(function()
+    while task.wait(0.5) do
+        local settings = _G.CatHubSettings or CatHubSettings
+        if settings and settings.InfiniteItems then
+            pcall(function()
+                local char = LocalPlayer.Character
+                local tool = char and char:FindFirstChildOfClass("Tool")
+                if tool then
+                    local name = tool.Name
+                    if (name == "Lockpick" or name == "Multitool" or name == "Shears" or name == "SkeletonKey") and not connectedTools[tool] then
+                        connectedTools[tool] = true
+                        tool.Activated:Connect(function()
+                            local currentSettings = _G.CatHubSettings or CatHubSettings
+                            if currentSettings and currentSettings.InfiniteItems then
+                                pcall(function()
+                                    local currentRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                                    if currentRoot and tool and tool.Parent == LocalPlayer.Character then
+                                        -- Truque do Abyssal Hub: joga no workspace e puxa de volta instantaneamente no clique
+                                        tool.Parent = workspace
+                                        task.wait(0.08)
+                                        if tool and tool.Parent == workspace then
+                                            tool.Parent = LocalPlayer.Character
+                                        end
+                                    end
+                                end)
+                            end
+                        end)
+                    end
+                end
+            end)
+        end
+    end
 end)
 
 -- ==================== AUTO INTERACT INTELIGENTE (GENERAL) ====================
