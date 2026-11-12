@@ -1,0 +1,1688 @@
+-- ==========================================================
+--               CAT HUB - DOORS (ULTIMATE v5)
+--        Inspired by Abyssal Hub & FourHub Style
+-- ==========================================================
+
+if not getgenv then
+	getgenv = function() return _G end
+end
+
+local CoreGui = game:GetService("CoreGui")
+local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local SoundService = game:GetService("SoundService")
+local Lighting = game:GetService("Lighting")
+local LogService = game:GetService("LogService")
+local PathfindingService = game:GetService("PathfindingService")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+-- Sistema de Carregamento e Salvamento Automático de Configurações
+local autoSaveFileName = "CatHub_AutoSave.json"
+_G.CatHubSettings = _G.CatHubSettings or {
+	SpeedEnabled = false,
+	SpeedVal = 25,
+	FlyEnabled = false,
+	FlyVal = 25,
+	NoclipEnabled = false,
+	NotifyEntities = false,
+	DoorESP = false,
+	LightEnabled = false,
+	BypassScreech = false,
+	BypassA90 = false,
+	BypassEyes = false,
+	AutoInteract = false,
+	EntityESP = false,
+	KeyESP = false,
+	ItemESP = false,
+	NotifyItems = false
+}
+
+pcall(function()
+	if readfile and isfile(autoSaveFileName) then
+		local decoded = HttpService:JSONDecode(readfile(autoSaveFileName))
+		if decoded and type(decoded) == "table" then
+			for k, v in pairs(decoded) do
+				_G.CatHubSettings[k] = v
+			end
+		end
+	end
+end)
+
+local function SaveAutoSettings()
+	pcall(function()
+		if writefile then
+			writefile(autoSaveFileName, HttpService:JSONEncode(_G.CatHubSettings))
+		end
+	end)
+end
+
+local CatHubSettings = _G.CatHubSettings
+
+-- Salvar ao sair do jogo (Correto para Client/LocalScript)
+Players.PlayerRemoving:Connect(function(player)
+	if player == LocalPlayer then
+		SaveAutoSettings()
+	end
+end)
+
+-- Sistema de Contagem de Execuções Salvas
+local executionCount = 1
+local saveFileName = "CatHub_Executions.json"
+pcall(function()
+	if writefile and readfile and isfile(saveFileName) then
+		local data = HttpService:JSONDecode(readfile(saveFileName))
+		if data and data.count then
+			executionCount = data.count + 1
+		end
+	end
+	if writefile then
+		writefile(saveFileName, HttpService:JSONEncode({count = executionCount}))
+	end
+end)
+
+-- ScreenGui Principal
+local CatHubGui = Instance.new("ScreenGui")
+CatHubGui.Name = "CatHubGui"
+CatHubGui.ResetOnSpawn = false
+CatHubGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+pcall(function()
+	CatHubGui.Parent = CoreGui
+end)
+if not CatHubGui.Parent then
+	CatHubGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+end
+
+-- Botão Flutuante (Abaixo do ícone do Roblox)
+local ToggleButton = Instance.new("TextButton")
+ToggleButton.Name = "ToggleButton"
+ToggleButton.Size = UDim2.new(0, 95, 0, 32)
+ToggleButton.Position = UDim2.new(0, 10, 0, 50)
+ToggleButton.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
+ToggleButton.TextColor3 = Color3.fromRGB(235, 235, 245)
+ToggleButton.Text = "Cat Hub"
+ToggleButton.Font = Enum.Font.Code
+ToggleButton.TextSize = 14
+ToggleButton.BorderSizePixel = 0
+ToggleButton.Parent = CatHubGui
+
+local ToggleCorner = Instance.new("UICorner")
+ToggleCorner.CornerRadius = UDim.new(0, 6)
+ToggleCorner.Parent = ToggleButton
+
+local ToggleStroke = Instance.new("UIStroke")
+ToggleStroke.Color = Color3.fromRGB(110, 70, 200)
+ToggleStroke.Thickness = 1.5
+ToggleStroke.Parent = ToggleButton
+
+-- Janela Principal (Centralizada perfeitamente no meio da tela)
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 690, 0, 430)
+MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(13, 13, 18)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Visible = false 
+MainFrame.Parent = CatHubGui
+
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 10)
+MainCorner.Parent = MainFrame
+
+local MainStroke = Instance.new("UIStroke")
+MainStroke.Color = Color3.fromRGB(90, 55, 160)
+MainStroke.Thickness = 1.8
+MainStroke.Parent = MainFrame
+
+-- Topbar / Header
+local TopBar = Instance.new("Frame")
+TopBar.Name = "TopBar"
+TopBar.Size = UDim2.new(1, 0, 0, 45)
+TopBar.BackgroundTransparency = 1
+TopBar.Parent = MainFrame
+
+local Title = Instance.new("TextLabel")
+Title.Name = "Title"
+Title.Size = UDim2.new(0, 220, 1, 0)
+Title.Position = UDim2.new(0, 15, 0, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "Cat Hub  |  Doors"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Font = Enum.Font.Code
+Title.TextSize = 16
+Title.Parent = TopBar
+
+-- Search Bar Funcional
+local SearchFrame = Instance.new("Frame")
+SearchFrame.Name = "SearchFrame"
+SearchFrame.Size = UDim2.new(0, 310, 0, 30)
+SearchFrame.Position = UDim2.new(0, 220, 0, 7)
+SearchFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 25)
+SearchFrame.BorderSizePixel = 0
+SearchFrame.Parent = TopBar
+
+local SearchCorner = Instance.new("UICorner")
+SearchCorner.CornerRadius = UDim.new(0, 6)
+SearchCorner.Parent = SearchFrame
+
+local SearchBox = Instance.new("TextBox")
+SearchBox.Name = "SearchBox"
+SearchBox.Size = UDim2.new(1, -12, 1, 0)
+SearchBox.Position = UDim2.new(0, 12, 0, 0)
+SearchBox.BackgroundTransparency = 1
+SearchBox.Text = ""
+SearchBox.PlaceholderText = "Search features..."
+SearchBox.PlaceholderColor3 = Color3.fromRGB(110, 110, 130)
+SearchBox.TextColor3 = Color3.fromRGB(230, 230, 240)
+SearchBox.Font = Enum.Font.Code
+SearchBox.TextSize = 13
+SearchBox.TextXAlignment = Enum.TextXAlignment.Left
+SearchBox.Parent = SearchFrame
+
+-- Botão Minimizar (-)
+local MinimizeBtn = Instance.new("TextButton")
+MinimizeBtn.Name = "MinimizeBtn"
+MinimizeBtn.Size = UDim2.new(0, 30, 0, 30)
+MinimizeBtn.Position = UDim2.new(1, -70, 0, 7)
+MinimizeBtn.BackgroundTransparency = 1
+MinimizeBtn.Text = "-"
+MinimizeBtn.TextColor3 = Color3.fromRGB(180, 180, 195)
+MinimizeBtn.Font = Enum.Font.Code
+MinimizeBtn.TextSize = 20
+MinimizeBtn.Parent = TopBar
+
+-- Botão Kill Hub (X)
+local KillBtn = Instance.new("TextButton")
+KillBtn.Name = "KillBtn"
+KillBtn.Size = UDim2.new(0, 30, 0, 30)
+KillBtn.Position = UDim2.new(1, -35, 0, 7)
+KillBtn.BackgroundTransparency = 1
+KillBtn.Text = "×"
+KillBtn.TextColor3 = Color3.fromRGB(245, 90, 90)
+KillBtn.Font = Enum.Font.Code
+KillBtn.TextSize = 22
+KillBtn.Parent = TopBar
+
+-- Sidebar (Abas Esquerda)
+local SideBar = Instance.new("Frame")
+SideBar.Name = "SideBar"
+SideBar.Size = UDim2.new(0, 165, 1, -45)
+SideBar.Position = UDim2.new(0, 0, 0, 45)
+SideBar.BackgroundTransparency = 1
+SideBar.Parent = MainFrame
+
+local SideLayout = Instance.new("UIListLayout")
+SideLayout.SortOrder = Enum.SortOrder.LayoutOrder
+SideLayout.Padding = UDim.new(0, 5)
+SideLayout.Parent = SideBar
+
+local SidePadding = Instance.new("UIPadding")
+SidePadding.PaddingLeft = UDim.new(0, 10)
+SidePadding.PaddingRight = UDim.new(0, 10)
+SidePadding.Parent = SideBar
+
+-- Área de Conteúdo (Direita)
+local ContentArea = Instance.new("Frame")
+ContentArea.Name = "ContentArea"
+ContentArea.Size = UDim2.new(1, -175, 1, -55)
+ContentArea.Position = UDim2.new(0, 170, 0, 45)
+ContentArea.BackgroundTransparency = 1
+ContentArea.Parent = MainFrame
+
+-- Sistema de Abas com Ícones
+local tabs = {}
+local function CreateTab(name, iconId)
+	local TabButton = Instance.new("TextButton")
+	TabButton.Size = UDim2.new(1, 0, 0, 34)
+	TabButton.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
+	TabButton.BackgroundTransparency = 1
+	TabButton.Text = "        " .. name
+	TabButton.TextColor3 = Color3.fromRGB(150, 150, 170)
+	TabButton.Font = Enum.Font.Code
+	TabButton.TextSize = 13
+	TabButton.TextXAlignment = Enum.TextXAlignment.Left
+	TabButton.Parent = SideBar
+
+	local TabCorner = Instance.new("UICorner")
+	TabCorner.CornerRadius = UDim.new(0, 6)
+	TabCorner.Parent = TabButton
+
+	if iconId and iconId ~= "" then
+		local Icon = Instance.new("ImageLabel")
+		Icon.Name = "TabIcon"
+		Icon.Size = UDim2.new(0, 18, 0, 18)
+		Icon.Position = UDim2.new(0, 10, 0.5, -9)
+		Icon.BackgroundTransparency = 1
+		Icon.Image = "rbxassetid://" .. iconId
+		Icon.ImageColor3 = Color3.fromRGB(150, 150, 170)
+		Icon.Parent = TabButton
+
+		pcall(function()
+			TabButton:GetPropertyChangedSignal("TextColor3"):Connect(function()
+				Icon.ImageColor3 = TabButton.TextColor3
+			end)
+		end)
+	end
+
+	local Page = Instance.new("ScrollingFrame")
+	Page.Name = name .. "Page"
+	Page.Size = UDim2.new(1, 0, 1, 0)
+	Page.BackgroundTransparency = 1
+	Page.ScrollBarThickness = 3
+	Page.ScrollBarImageColor3 = Color3.fromRGB(110, 70, 200)
+	Page.Visible = false
+	Page.Parent = ContentArea
+
+	local PageLayout = Instance.new("UIGridLayout")
+	PageLayout.CellSize = UDim2.new(0.48, 0, 0, 390)
+	PageLayout.CellPadding = UDim2.new(0.04, 0, 0, 10)
+	PageLayout.Parent = Page
+
+	TabButton.MouseButton1Click:Connect(function()
+		for _, tab in pairs(tabs) do
+			tab.Button.BackgroundTransparency = 1
+			tab.Button.TextColor3 = Color3.fromRGB(150, 150, 170)
+			tab.Page.Visible = false
+		end
+		TabButton.BackgroundTransparency = 0
+		TabButton.BackgroundColor3 = Color3.fromRGB(24, 24, 34)
+		TabButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+		Page.Visible = true
+	end)
+
+	table.insert(tabs, {Button = TabButton, Page = Page})
+	return Page
+end
+
+-- Criando Abas com os Ícones Solicitados
+local InfoPage = CreateTab("Info", "9405926413")
+local GeneralPage = CreateTab("General", "6023426915")
+local ExploitsPage = CreateTab("Exploits", "12098860537")
+local VisualsPage = CreateTab("Visuals", "16369898474")
+local FloorsPage = CreateTab("Floors", "10398333827")
+local SettingsPage = CreateTab("Settings", "97349478451545")
+
+-- Ativar Aba Info por Padrão
+tabs[1].Button.BackgroundTransparency = 0
+tabs[1].Button.BackgroundColor3 = Color3.fromRGB(24, 24, 34)
+tabs[1].Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+InfoPage.Visible = true
+
+-- Função de Filtragem da SearchBox
+SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
+	local query = SearchBox.Text:lower()
+	if not tabs then return end
+
+	for _, tabData in ipairs(tabs) do
+		local page = tabData.Page
+		for _, section in ipairs(page:GetChildren()) do
+			if section:IsA("Frame") then
+				local container = section:FindFirstChildOfClass("ScrollingFrame")
+				if container then
+					for _, item in ipairs(container:GetChildren()) do
+						if item:IsA("Frame") then
+							local label = item:FindFirstChildOfClass("TextLabel")
+							if label then
+								local featureName = label.Text:lower()
+								if query == "" or featureName:find(query) then
+									item.Visible = true
+								else
+									item.Visible = false
+								end
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+end)
+
+-- Função para Criar Seções Estilizadas
+local function CreateSection(parent, title)
+	local Section = Instance.new("Frame")
+	Section.BackgroundColor3 = Color3.fromRGB(17, 17, 23)
+	Section.Parent = parent
+
+	local SecCorner = Instance.new("UICorner")
+	SecCorner.CornerRadius = UDim.new(0, 8)
+	SecCorner.Parent = Section
+
+	local SecStroke = Instance.new("UIStroke")
+	SecStroke.Color = Color3.fromRGB(40, 33, 58)
+	SecStroke.Thickness = 1
+	SecStroke.Parent = Section
+
+	local SecTitle = Instance.new("TextLabel")
+	SecTitle.Size = UDim2.new(1, -20, 0, 25)
+	SecTitle.Position = UDim2.new(0, 10, 0, 5)
+	SecTitle.BackgroundTransparency = 1
+	SecTitle.Text = title
+	SecTitle.TextColor3 = Color3.fromRGB(220, 220, 240)
+	SecTitle.Font = Enum.Font.Code
+	SecTitle.TextSize = 13
+	SecTitle.TextXAlignment = Enum.TextXAlignment.Left
+	SecTitle.Parent = Section
+
+	local Container = Instance.new("ScrollingFrame")
+	Container.Size = UDim2.new(1, -10, 1, -35)
+	Container.Position = UDim2.new(0, 5, 0, 30)
+	Container.BackgroundTransparency = 1
+	Container.BorderSizePixel = 0
+	Container.ScrollBarThickness = 2
+	Container.CanvasSize = UDim2.new(0, 0, 0, 0)
+	Container.Parent = Section
+
+	local Layout = Instance.new("UIListLayout")
+	Layout.SortOrder = Enum.SortOrder.LayoutOrder
+	Layout.Padding = UDim.new(0, 6)
+	Layout.Parent = Container
+
+	Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+		Container.CanvasSize = UDim2.new(0, 0, 0, Layout.AbsoluteContentSize.Y + 10)
+	end)
+
+	return Container
+end
+
+-- Função Toggle
+local function AddToggle(section, text, settingKey, callback)
+	local ToggleFrame = Instance.new("Frame")
+	ToggleFrame.Size = UDim2.new(1, 0, 0, 26)
+	ToggleFrame.BackgroundTransparency = 1
+	ToggleFrame.Parent = section
+
+	local Label = Instance.new("TextLabel")
+	Label.Size = UDim2.new(0.7, 0, 1, 0)
+	Label.BackgroundTransparency = 1
+	Label.Text = text
+	Label.TextColor3 = Color3.fromRGB(185, 185, 200)
+	Label.Font = Enum.Font.Code
+	Label.TextSize = 11
+	Label.TextXAlignment = Enum.TextXAlignment.Left
+	Label.Parent = ToggleFrame
+
+	local Switch = Instance.new("TextButton")
+	Switch.Size = UDim2.new(0, 36, 0, 18)
+	Switch.Position = UDim2.new(1, -36, 0.5, -9)
+	Switch.BackgroundColor3 = Color3.fromRGB(32, 32, 45)
+	Switch.Text = ""
+	Switch.Parent = ToggleFrame
+
+	local SwitchCorner = Instance.new("UICorner")
+	SwitchCorner.CornerRadius = UDim.new(1, 0)
+	SwitchCorner.Parent = Switch
+
+	local Circle = Instance.new("Frame")
+	Circle.Size = UDim2.new(0, 14, 0, 14)
+	Circle.Position = UDim2.new(0, 2, 0.5, -7)
+	Circle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	Circle.Parent = Switch
+
+	local CircleCorner = Instance.new("UICorner")
+	CircleCorner.CornerRadius = UDim.new(1, 0)
+	CircleCorner.Parent = Circle
+
+	local initialState = CatHubSettings[settingKey] or false
+	if initialState then
+		Switch.BackgroundColor3 = Color3.fromRGB(130, 85, 245)
+		Circle.Position = UDim2.new(1, -16, 0.5, -7)
+	end
+
+	Switch.MouseButton1Click:Connect(function()
+		local newState = not CatHubSettings[settingKey]
+		CatHubSettings[settingKey] = newState
+		SaveAutoSettings()
+
+		if newState then
+			Switch.BackgroundColor3 = Color3.fromRGB(130, 85, 245)
+			Circle:TweenPosition(UDim2.new(1, -16, 0.5, -7), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.15, true)
+		else
+			Switch.BackgroundColor3 = Color3.fromRGB(32, 32, 45)
+			Circle:TweenPosition(UDim2.new(0, 2, 0.5, -7), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.15, true)
+		end
+		if callback then callback(newState) end
+	end)
+end
+
+-- Função Slider
+local function AddSlider(section, text, min, max, default, settingKey, callback)
+	local actualDefault = CatHubSettings[settingKey] or default
+	CatHubSettings[settingKey] = actualDefault
+
+	local SliderFrame = Instance.new("Frame")
+	SliderFrame.Size = UDim2.new(1, 0, 0, 40)
+	SliderFrame.BackgroundTransparency = 1
+	SliderFrame.Parent = section
+
+	local TitleLabel = Instance.new("TextLabel")
+	TitleLabel.Size = UDim2.new(1, 0, 0, 16)
+	TitleLabel.BackgroundTransparency = 1
+	TitleLabel.Text = text .. ": " .. tostring(actualDefault)
+	TitleLabel.TextColor3 = Color3.fromRGB(185, 185, 200)
+	TitleLabel.Font = Enum.Font.Code
+	TitleLabel.TextSize = 11
+	TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	TitleLabel.Parent = SliderFrame
+
+	local BarBg = Instance.new("Frame")
+	BarBg.Size = UDim2.new(1, 0, 0, 8)
+	BarBg.Position = UDim2.new(0, 0, 0, 24)
+	BarBg.BackgroundColor3 = Color3.fromRGB(32, 32, 45)
+	BarBg.BorderSizePixel = 0
+	BarBg.Parent = SliderFrame
+
+	local BarBgCorner = Instance.new("UICorner")
+	BarBgCorner.CornerRadius = UDim.new(1, 0)
+	BarBgCorner.Parent = BarBg
+
+	local BarFill = Instance.new("Frame")
+	BarFill.Size = UDim2.new((actualDefault - min) / (max - min), 0, 1, 0)
+	BarFill.BackgroundColor3 = Color3.fromRGB(130, 85, 245)
+	BarFill.BorderSizePixel = 0
+	BarFill.Parent = BarBg
+
+	local BarFillCorner = Instance.new("UICorner")
+	BarFillCorner.CornerRadius = UDim.new(1, 0)
+	BarFillCorner.Parent = BarFill
+
+	local dragging = false
+	local function updateValue(input)
+		local pos = math.clamp((input.Position.X - BarBg.AbsolutePosition.X) / BarBg.AbsoluteSize.X, 0, 1)
+		local value = math.floor(min + ((max - min) * pos))
+		BarFill.Size = UDim2.new(pos, 0, 1, 0)
+		TitleLabel.Text = text .. ": " .. tostring(value)
+		CatHubSettings[settingKey] = value
+		SaveAutoSettings()
+		if callback then callback(value) end
+	end
+
+	BarBg.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = true
+			updateValue(input)
+		end
+	end)
+
+	UserInputService.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = false
+		end
+	end)
+
+	UserInputService.InputChanged:Connect(function(input)
+		if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+			updateValue(input)
+		end
+	end)
+end
+
+-- ==================== SISTEMA DE NOTIFICAÇÃO COM "CAT HUB" EM CIMA ====================
+local function ShowNotification(textMsg)
+	pcall(function()
+		local sound = Instance.new("Sound")
+		sound.SoundId = "rbxassetid://110217765141398"
+		sound.Volume = 1
+		sound.Parent = SoundService
+		sound:Play()
+		game:GetService("Debris"):AddItem(sound, 4)
+	end)
+
+	if CatHubGui:FindFirstChild("NotificationFrame") then
+		CatHubGui.NotificationFrame:Destroy()
+	end
+
+	local NotifFrame = Instance.new("Frame")
+	NotifFrame.Name = "NotificationFrame"
+	NotifFrame.Size = UDim2.new(0, 280, 0, 65)
+	NotifFrame.Position = UDim2.new(1, 320, 0, 20)
+	NotifFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 25)
+	NotifFrame.BorderSizePixel = 0
+	NotifFrame.Parent = CatHubGui
+
+	local NotifCorner = Instance.new("UICorner")
+	NotifCorner.CornerRadius = UDim.new(0, 8)
+	NotifCorner.Parent = NotifFrame
+
+	local NotifStroke = Instance.new("UIStroke")
+	NotifStroke.Color = Color3.fromRGB(100, 65, 180)
+	NotifStroke.Thickness = 1.5
+	NotifStroke.Parent = NotifFrame
+
+	local HeaderLbl = Instance.new("TextLabel")
+	HeaderLbl.Size = UDim2.new(1, -15, 0, 18)
+	HeaderLbl.Position = UDim2.new(0, 10, 0, 4)
+	HeaderLbl.BackgroundTransparency = 1
+	HeaderLbl.Text = "CAT HUB"
+	HeaderLbl.TextColor3 = Color3.fromRGB(160, 110, 255)
+	HeaderLbl.Font = Enum.Font.Code
+	HeaderLbl.TextSize = 11
+	HeaderLbl.TextXAlignment = Enum.TextXAlignment.Left
+	HeaderLbl.Parent = NotifFrame
+
+	local Label = Instance.new("TextLabel")
+	Label.Size = UDim2.new(1, -15, 1, -22)
+	Label.Position = UDim2.new(0, 10, 0, 20)
+	Label.BackgroundTransparency = 1
+	Label.Text = textMsg
+	Label.TextColor3 = Color3.fromRGB(245, 245, 255)
+	Label.Font = Enum.Font.Code
+	Label.TextSize = 11
+	Label.TextWrapped = true
+	Label.Parent = NotifFrame
+
+	local TimeBarBg = Instance.new("Frame")
+	TimeBarBg.Size = UDim2.new(1, 0, 0, 4)
+	TimeBarBg.Position = UDim2.new(0, 0, 1, -4)
+	TimeBarBg.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+	TimeBarBg.BorderSizePixel = 0
+	TimeBarBg.Parent = NotifFrame
+
+	local TimeBar = Instance.new("Frame")
+	TimeBar.Size = UDim2.new(1, 0, 1, 0)
+	TimeBar.BackgroundColor3 = Color3.fromRGB(130, 85, 245)
+	TimeBar.BorderSizePixel = 0
+	TimeBar.Parent = TimeBarBg
+
+	NotifFrame:TweenPosition(UDim2.new(1, -295, 0, 20), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.3, true)
+
+	local tweenInfo = TweenInfo.new(5, Enum.EasingStyle.Linear)
+	local tween = TweenService:Create(TimeBar, tweenInfo, {Size = UDim2.new(0, 0, 1, 0)})
+	tween:Play()
+
+	task.delay(5.3, function()
+		if NotifFrame and NotifFrame.Parent then
+			NotifFrame:TweenPosition(UDim2.new(1, 320, 0, 20), Enum.EasingDirection.In, Enum.EasingStyle.Quad, 0.3, true)
+			task.wait(0.3)
+			NotifFrame:Destroy()
+		end
+	end)
+end
+
+-- Notificação Inicial
+task.spawn(function()
+	task.wait(1)
+	ShowNotification("Thanks for using my script :)")
+end)
+
+-- ==================== CONTEÚDO: ABA INFO ====================
+local SecUserInfo = CreateSection(InfoPage, "User Info")
+
+local UserLbl = Instance.new("TextLabel")
+UserLbl.Size = UDim2.new(1, 0, 0, 20)
+UserLbl.BackgroundTransparency = 1
+UserLbl.Text = "Username: " .. LocalPlayer.Name
+UserLbl.TextColor3 = Color3.fromRGB(220, 220, 230)
+UserLbl.Font = Enum.Font.Code
+UserLbl.TextSize = 12
+UserLbl.TextXAlignment = Enum.TextXAlignment.Left
+UserLbl.Parent = SecUserInfo
+
+local ExecLbl = Instance.new("TextLabel")
+ExecLbl.Size = UDim2.new(1, 0, 0, 20)
+ExecLbl.BackgroundTransparency = 1
+ExecLbl.Text = "Executions: " .. tostring(executionCount)
+ExecLbl.TextColor3 = Color3.fromRGB(220, 220, 230)
+ExecLbl.Font = Enum.Font.Code
+ExecLbl.TextSize = 12
+ExecLbl.TextXAlignment = Enum.TextXAlignment.Left
+ExecLbl.Parent = SecUserInfo
+
+local AvatarImg = Instance.new("ImageLabel")
+AvatarImg.Size = UDim2.new(0, 120, 0, 120)
+AvatarImg.Position = UDim2.new(0.5, -60, 0, 45)
+AvatarImg.BackgroundColor3 = Color3.fromRGB(13, 13, 18)
+AvatarImg.Image = Players:GetUserThumbnailAsync(LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
+AvatarImg.Parent = SecUserInfo
+
+local AvatarCorner = Instance.new("UICorner")
+AvatarCorner.CornerRadius = UDim.new(0, 8)
+AvatarCorner.Parent = AvatarImg
+
+-- Seção Credits
+local SecCredits = CreateSection(InfoPage, "Credits")
+
+local Credit1 = Instance.new("TextLabel")
+Credit1.Size = UDim2.new(1, 0, 0, 20)
+Credit1.BackgroundTransparency = 1
+Credit1.Text = "LucasDaviSonic2016 - Creator of script"
+Credit1.TextColor3 = Color3.fromRGB(80, 150, 255)
+Credit1.Font = Enum.Font.Code
+Credit1.TextSize = 11
+Credit1.TextXAlignment = Enum.TextXAlignment.Left
+Credit1.Parent = SecCredits
+
+local Credit2 = Instance.new("TextLabel")
+Credit2.Size = UDim2.new(1, 0, 0, 20)
+Credit2.BackgroundTransparency = 1
+Credit2.Text = LocalPlayer.Name .. " - For Using This Script"
+Credit2.TextColor3 = Color3.fromRGB(80, 220, 100)
+Credit2.Font = Enum.Font.Code
+Credit2.TextSize = 11
+Credit2.TextXAlignment = Enum.TextXAlignment.Left
+Credit2.Parent = SecCredits
+
+local Credit3 = Instance.new("TextLabel")
+Credit3.Size = UDim2.new(1, 0, 0, 20)
+Credit3.BackgroundTransparency = 1
+Credit3.Text = "Script inspired in Abyssal Hub :)"
+Credit3.TextColor3 = Color3.fromRGB(220, 220, 240)
+Credit3.Font = Enum.Font.Code
+Credit3.TextSize = 11
+Credit3.TextXAlignment = Enum.TextXAlignment.Left
+Credit3.Parent = SecCredits
+
+-- Seção Changelog
+local SecChangelog = CreateSection(InfoPage, "Changelog")
+local ChangeTxt = Instance.new("TextLabel")
+ChangeTxt.Size = UDim2.new(1, 0, 0, 30)
+ChangeTxt.BackgroundTransparency = 1
+ChangeTxt.Text = "+ Created Script Hub (Cat Hub)"
+ChangeTxt.TextColor3 = Color3.fromRGB(80, 220, 100)
+ChangeTxt.Font = Enum.Font.Code
+ChangeTxt.TextSize = 11
+ChangeTxt.TextXAlignment = Enum.TextXAlignment.Left
+ChangeTxt.Parent = SecChangelog
+
+-- Seção Environment Test Results (Console Logs Coloridos)
+local SecEnv = CreateSection(InfoPage, "Environment Test Results")
+local detectedExecutor = "ERROR"
+pcall(function()
+	if identifyexecutor then
+		detectedExecutor = identifyexecutor()
+	elseif getexecutorname then
+		detectedExecutor = getexecutorname()
+	end
+end)
+
+local ExecTestLbl = Instance.new("TextLabel")
+ExecTestLbl.Size = UDim2.new(1, 0, 0, 24)
+ExecTestLbl.BackgroundTransparency = 1
+ExecTestLbl.Text = "Executor: " .. detectedExecutor
+ExecTestLbl.TextColor3 = (detectedExecutor == "ERROR") and Color3.fromRGB(220, 60, 60) or Color3.fromRGB(80, 220, 100)
+ExecTestLbl.Font = Enum.Font.Code
+ExecTestLbl.TextSize = 12
+ExecTestLbl.TextXAlignment = Enum.TextXAlignment.Left
+ExecTestLbl.Parent = SecEnv
+
+local ConsoleLogBox = Instance.new("TextLabel")
+ConsoleLogBox.Size = UDim2.new(1, 0, 0, 90)
+ConsoleLogBox.BackgroundTransparency = 1
+ConsoleLogBox.Text = "Console Logs:\n[System initialized...]"
+ConsoleLogBox.TextColor3 = Color3.fromRGB(80, 150, 255)
+ConsoleLogBox.Font = Enum.Font.Code
+ConsoleLogBox.TextSize = 10
+ConsoleLogBox.TextXAlignment = Enum.TextXAlignment.Left
+ConsoleLogBox.TextYAlignment = Enum.TextYAlignment.Top
+ConsoleLogBox.TextWrapped = true
+ConsoleLogBox.Parent = SecEnv
+
+local logBuffer = "[System initialized...]\n"
+LogService.MessageOut:Connect(function(msg, messageType)
+	local prefix = "[INFO] "
+	if messageType == Enum.MessageType.MessageWarning then
+		prefix = "[WARN] "
+	elseif messageType == Enum.MessageType.MessageError then
+		prefix = "[ERROR] "
+	end
+
+	logBuffer = logBuffer .. prefix .. msg .. "\n"
+	if #logBuffer > 500 then
+		logBuffer = logBuffer:sub(#logBuffer - 500)
+	end
+
+	pcall(function()
+		ConsoleLogBox.Text = "Console Logs:\n" .. logBuffer
+		if messageType == Enum.MessageType.MessageError then
+			ConsoleLogBox.TextColor3 = Color3.fromRGB(240, 80, 80)
+		elseif messageType == Enum.MessageType.MessageWarning then
+			ConsoleLogBox.TextColor3 = Color3.fromRGB(240, 200, 60)
+		else
+			ConsoleLogBox.TextColor3 = Color3.fromRGB(80, 150, 255)
+		end
+	end)
+end)
+
+
+-- ==================== CONTEÚDO: ABA GENERAL ====================
+local SecChar = CreateSection(GeneralPage, "Character")
+
+AddToggle(SecChar, "Enable Speed Boost", "SpeedEnabled", function(state)
+	CatHubSettings.SpeedEnabled = state
+end)
+AddSlider(SecChar, "Speed Boost", 5, 150, 25, "SpeedVal", function(val)
+	CatHubSettings.SpeedVal = val
+end)
+
+AddToggle(SecChar, "Fly", "FlyEnabled", function(state)
+	CatHubSettings.FlyEnabled = state
+end)
+AddSlider(SecChar, "Fly Speed", 5, 150, 25, "FlyVal", function(val)
+	CatHubSettings.FlyVal = val
+end)
+
+AddToggle(SecChar, "Noclip", "NoclipEnabled", function(state)
+	CatHubSettings.NoclipEnabled = state
+end)
+
+local SecAutomation = CreateSection(GeneralPage, "Automation")
+AddToggle(SecAutomation, "Auto Interact", "AutoInteract", function(state)
+	CatHubSettings.AutoInteract = state
+end)
+
+
+-- ==================== CONTEÚDO: ABA EXPLOITS ====================
+local SecBypass = CreateSection(ExploitsPage, "Bypasses")
+AddToggle(SecBypass, "Bypass Screech", "BypassScreech", function(state)
+	CatHubSettings.BypassScreech = state
+end)
+AddToggle(SecBypass, "Bypass A90", "BypassA90", function(state)
+	CatHubSettings.BypassA90 = state
+end)
+AddToggle(SecBypass, "Bypass Eyes", "BypassEyes", function(state)
+	CatHubSettings.BypassEyes = state
+end)
+
+local SecEntities = CreateSection(ExploitsPage, "Entities")
+AddToggle(SecEntities, "Notify Entities", "NotifyEntities", function(state)
+	CatHubSettings.NotifyEntities = state
+end)
+
+AddToggle(SecEntities, "Notify Items", "NotifyItems", function(state)
+	CatHubSettings.NotifyItems = state
+end)
+
+local SecItems = CreateSection(ExploitsPage, "Items")
+AddToggle(SecItems, "Infinite Items", "InfiniteItems", function(state)
+	CatHubSettings.InfiniteItems = state
+end)
+
+
+-- ==================== CONTEÚDO: ABA VISUALS ====================
+local SecEsp = CreateSection(VisualsPage, "ESP & Vision")
+AddToggle(SecEsp, "Door ESP", "DoorESP", function(state)
+	CatHubSettings.DoorESP = state
+end)
+AddToggle(SecEsp, "Entity ESP", "EntityESP", function(state)
+	CatHubSettings.EntityESP = state
+end)
+AddToggle(SecEsp, "Key ESP", "KeyESP", function(state)
+	CatHubSettings.KeyESP = state
+end)
+AddToggle(SecEsp, "Item ESP", "ItemESP", function(state)
+	CatHubSettings.ItemESP = state
+end)
+AddToggle(SecEsp, "Light (Fullbright)", "LightEnabled", function(state)
+	CatHubSettings.LightEnabled = state
+end)
+
+-- ==================== FLOORS E AUTO FLOORS ====================
+
+local SecFloors = CreateSection(FloorsPage, "Auto floors")
+AddToggle(SecFloors, "Auto Hotel", "AutoHotel", function(state)
+	CatHubSettings.AutoHotel = state
+end)
+
+-- ==================== CONFIGURAÇÕES & SETTINGS ====================
+local SecConfigSave = CreateSection(SettingsPage, "Create & Save Config")
+
+local ConfigNameBox = Instance.new("TextBox")
+ConfigNameBox.Name = "ConfigNameBox"
+ConfigNameBox.Size = UDim2.new(1, 0, 0, 30)
+ConfigNameBox.BackgroundColor3 = Color3.fromRGB(18, 18, 25)
+ConfigNameBox.TextColor3 = Color3.fromRGB(220, 220, 235)
+ConfigNameBox.Text = ""
+ConfigNameBox.PlaceholderText = "Enter config name..."
+ConfigNameBox.PlaceholderColor3 = Color3.fromRGB(110, 110, 130)
+ConfigNameBox.Font = Enum.Font.Code
+ConfigNameBox.TextSize = 12
+ConfigNameBox.BorderSizePixel = 0
+ConfigNameBox.Parent = SecConfigSave
+
+local BoxCorner = Instance.new("UICorner")
+BoxCorner.CornerRadius = UDim.new(0, 6)
+BoxCorner.Parent = ConfigNameBox
+
+local SaveConfigBtn = Instance.new("TextButton")
+SaveConfigBtn.Size = UDim2.new(1, 0, 0, 30)
+SaveConfigBtn.BackgroundColor3 = Color3.fromRGB(130, 85, 245)
+SaveConfigBtn.Text = "Save Current Config"
+SaveConfigBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+SaveConfigBtn.Font = Enum.Font.Code
+SaveConfigBtn.TextSize = 12
+SaveConfigBtn.BorderSizePixel = 0
+SaveConfigBtn.Parent = SecConfigSave
+
+local SaveCorner = Instance.new("UICorner")
+SaveCorner.CornerRadius = UDim.new(0, 6)
+SaveCorner.Parent = SaveConfigBtn
+
+local SecConfigManage = CreateSection(SettingsPage, "Saved Configs")
+
+local SelectedConfigLabel = Instance.new("TextLabel")
+SelectedConfigLabel.Size = UDim2.new(1, 0, 0, 20)
+SelectedConfigLabel.BackgroundTransparency = 1
+SelectedConfigLabel.Text = "Selected: None"
+SelectedConfigLabel.TextColor3 = Color3.fromRGB(185, 185, 200)
+SelectedConfigLabel.Font = Enum.Font.Code
+SelectedConfigLabel.TextSize = 11
+SelectedConfigLabel.TextXAlignment = Enum.TextXAlignment.Left
+SelectedConfigLabel.Parent = SecConfigManage
+
+local ConfigListScroll = Instance.new("ScrollingFrame")
+ConfigListScroll.Size = UDim2.new(1, 0, 0, 90)
+ConfigListScroll.BackgroundColor3 = Color3.fromRGB(18, 18, 25)
+ConfigListScroll.BorderSizePixel = 0
+ConfigListScroll.ScrollBarThickness = 3
+ConfigListScroll.Parent = SecConfigManage
+
+local ListLayout = Instance.new("UIListLayout")
+ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+ListLayout.Padding = UDim.new(0, 4)
+ListLayout.Parent = ConfigListScroll
+
+local selectedConfigFile = nil
+
+local function RefreshConfigList()
+	for _, child in pairs(ConfigListScroll:GetChildren()) do
+		if child:IsA("TextButton") then child:Destroy() end
+	end
+
+	pcall(function()
+		if not isfolder("CatHub_Configs") then
+			makefolder("CatHub_Configs")
+		end
+
+		local files = listfiles("CatHub_Configs")
+		for _, filePath in ipairs(files) do
+			local fileName = filePath:match(".+[/\\](.+)") or filePath
+			fileName = fileName:gsub(".json", "")
+
+			local ConfigItem = Instance.new("TextButton")
+			ConfigItem.Size = UDim2.new(1, -5, 0, 26)
+			ConfigItem.BackgroundColor3 = Color3.fromRGB(28, 28, 38)
+			ConfigItem.Text = "  " .. fileName
+			ConfigItem.TextColor3 = Color3.fromRGB(210, 210, 225)
+			ConfigItem.Font = Enum.Font.Code
+			ConfigItem.TextSize = 11
+			ConfigItem.TextXAlignment = Enum.TextXAlignment.Left
+			ConfigItem.BorderSizePixel = 0
+			ConfigItem.Parent = ConfigListScroll
+
+			ConfigItem.MouseButton1Click:Connect(function()
+				selectedConfigFile = fileName
+				SelectedConfigLabel.Text = "Selected: " .. fileName
+			end)
+		end
+	end)
+end
+
+SaveConfigBtn.MouseButton1Click:Connect(function()
+	local configName = ConfigNameBox.Text
+	if configName ~= "" then
+		pcall(function()
+			if not isfolder("CatHub_Configs") then makefolder("CatHub_Configs") end
+			local encodedData = HttpService:JSONEncode(CatHubSettings)
+			writefile("CatHub_Configs/" .. configName .. ".json", encodedData)
+			ConfigNameBox.Text = ""
+			RefreshConfigList()
+			ShowNotification("Config '" .. configName .. "' Saved!")
+		end)
+	end
+end)
+
+-- ==================== AUTO HOTEL (PATHFIND NODES) ====================
+task.spawn(function()
+	local processedRooms = {}
+
+	while task.wait(0.1) do
+		local settings = _G.CatHubSettings or CatHubSettings
+		if settings and settings.AutoHotel then
+			pcall(function()
+				local char = LocalPlayer.Character
+				local rootPart = char and char:FindFirstChild("HumanoidRootPart")
+				local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+				local currentRooms = workspace:FindFirstChild("CurrentRooms")
+				local latestRoomNum = workspace:GetAttribute("LatestRoom")
+
+				if rootPart and humanoid and currentRooms and latestRoomNum then
+					local roomFolder = currentRooms:FindFirstChild(tostring(latestRoomNum))
+
+					if roomFolder and not processedRooms[roomFolder] then
+						local nodesFolder = roomFolder:FindFirstChild("PathfindNodes")
+
+						if nodesFolder then
+							-- Coleta e ordena os nós numericamente (1, 2, 3...)
+							local nodes = {}
+							for _, node in ipairs(nodesFolder:GetChildren()) do
+								local num = tonumber(node.Name)
+								if num then
+									table.insert(nodes, {Index = num, Part = node})
+								end
+							end
+
+							table.sort(nodes, function(a, b)
+								return a.Index < b.Index
+							end)
+
+							-- Move o player por cada nó em ordem rigorosa
+							for _, nodeData in ipairs(nodes) do
+								if not settings.AutoHotel then break end
+								local targetPos = nodeData.Part.Position
+								humanoid:MoveTo(targetPos)
+
+								-- Aguarda o player chegar perto do nó atual antes de ir pro próximo
+								local startTime = tick()
+								repeat
+									task.wait(0.05)
+								until not settings.AutoHotel or (rootPart.Position - targetPos).Magnitude < 4 or (tick() - startTime) > 2.5
+							end
+						end
+
+						-- Ao terminar os nós, vai até a porta da sala
+						local door = roomFolder:FindFirstChild("Door")
+						local doorPart = door and (door:FindFirstChild("MeshPart") or door:FindFirstChild("Door") or door:FindFirstChild("Base"))
+						if doorPart then
+							humanoid:MoveTo(doorPart.Position)
+							repeat
+								task.wait(0.05)
+							until not settings.AutoHotel or (rootPart.Position - doorPart.Position).Magnitude < 5
+						end
+
+						-- Salva a sala como processada para evitar loop e limpa referências antigas para poupar memória
+						processedRooms[roomFolder] = true
+
+						-- Limpeza preventiva de salas muito antigas da tabela para evitar lag/memory leak
+						for oldRoom, _ in pairs(processedRooms) do
+							if oldRoom and oldRoom.Parent ~= currentRooms then
+								processedRooms[oldRoom] = nil
+							end
+						end
+					end
+				end
+			end)
+		end
+	end
+end)
+
+local UpdateListBtn = Instance.new("TextButton")
+UpdateListBtn.Size = UDim2.new(1, 0, 0, 28)
+UpdateListBtn.BackgroundColor3 = Color3.fromRGB(70, 50, 120)
+UpdateListBtn.Text = "Update List"
+UpdateListBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+UpdateListBtn.Font = Enum.Font.Code
+UpdateListBtn.TextSize = 12
+UpdateListBtn.BorderSizePixel = 0
+UpdateListBtn.Parent = SecConfigManage
+
+UpdateListBtn.MouseButton1Click:Connect(function()
+	RefreshConfigList()
+	ShowNotification("Config list updated!")
+end)
+
+local LoadConfigBtn = Instance.new("TextButton")
+LoadConfigBtn.Size = UDim2.new(1, 0, 0, 28)
+LoadConfigBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 48)
+LoadConfigBtn.Text = "Load Config"
+LoadConfigBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+LoadConfigBtn.Font = Enum.Font.Code
+LoadConfigBtn.TextSize = 12
+LoadConfigBtn.BorderSizePixel = 0
+LoadConfigBtn.Parent = SecConfigManage
+
+local DeleteConfigBtn = Instance.new("TextButton")
+DeleteConfigBtn.Size = UDim2.new(1, 0, 0, 28)
+DeleteConfigBtn.BackgroundColor3 = Color3.fromRGB(180, 45, 45)
+DeleteConfigBtn.Text = "Delete Config"
+DeleteConfigBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+DeleteConfigBtn.Font = Enum.Font.Code
+DeleteConfigBtn.TextSize = 12
+DeleteConfigBtn.BorderSizePixel = 0
+DeleteConfigBtn.Parent = SecConfigManage
+
+LoadConfigBtn.MouseButton1Click:Connect(function()
+	if selectedConfigFile then
+		pcall(function()
+			local content = readfile("CatHub_Configs/" .. selectedConfigFile .. ".json")
+			local data = HttpService:JSONDecode(content)
+			for k, v in pairs(data) do
+				CatHubSettings[k] = v
+			end
+			SaveAutoSettings()
+			ShowNotification("Config '" .. selectedConfigFile .. "' Loaded!")
+		end)
+	end
+end)
+
+DeleteConfigBtn.MouseButton1Click:Connect(function()
+	if selectedConfigFile then
+		pcall(function()
+			if isfile("CatHub_Configs/" .. selectedConfigFile .. ".json") then
+				delfile("CatHub_Configs/" .. selectedConfigFile .. ".json")
+			end
+			SelectedConfigLabel.Text = "Selected: None"
+			selectedConfigFile = nil
+			RefreshConfigList()
+			ShowNotification("Config Deleted!")
+		end)
+	end
+end)
+
+RefreshConfigList()
+
+
+-- ==================== LOGICAS EM TEMPO REAL ====================
+
+local notifiedEntities = {}
+local notifiedItems = {}
+
+local originalBrightness = Lighting.Brightness
+local originalClockTime = Lighting.ClockTime
+local originalShadows = Lighting.GlobalShadows
+local originalFogEnd = Lighting.FogEnd
+
+RunService.RenderStepped:Connect(function()
+	local settings = _G.CatHubSettings or CatHubSettings
+	if not settings then return end
+
+	local char = LocalPlayer.Character
+	if not char then return end
+	local humanoid = char:FindFirstChildOfClass("Humanoid")
+	local rootPart = char:FindFirstChild("HumanoidRootPart")
+
+	-- 1. Speed Boost
+	if humanoid then
+		if settings.SpeedEnabled then
+			humanoid.WalkSpeed = settings.SpeedVal or 25
+		else
+			if humanoid.WalkSpeed == (settings.SpeedVal or 25) then
+				humanoid.WalkSpeed = 16 
+			end
+		end
+	end
+
+	-- 2. Noclip
+	if settings.NoclipEnabled then
+		for _, part in pairs(char:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.CanCollide = false
+			end
+		end
+	end
+
+	-- 3. Fly Definitivo
+	if settings.FlyEnabled and rootPart then
+		local flySpeed = settings.FlyVal or 25
+		local cam = workspace.CurrentCamera
+		local moveDirection = Vector3.new(0, 0, 0)
+
+		if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDirection = moveDirection + cam.CFrame.LookVector end
+		if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDirection = moveDirection - cam.CFrame.LookVector end
+		if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDirection = moveDirection - cam.CFrame.RightVector end
+		if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDirection = moveDirection + cam.CFrame.RightVector end
+
+		if humanoid and humanoid.MoveDirection.Magnitude > 0 and moveDirection.Magnitude == 0 then
+			moveDirection = humanoid.MoveDirection
+		end
+
+		rootPart.AssemblyLinearVelocity = moveDirection * flySpeed
+		if humanoid then
+			humanoid.PlatformStand = true
+		end
+	else
+		if humanoid and humanoid.PlatformStand and not settings.FlyEnabled then
+			humanoid.PlatformStand = false
+		end
+	end
+
+	-- 5. Light (Fullbright Reversível)
+	if settings.LightEnabled then
+		Lighting.Brightness = 2
+		Lighting.ClockTime = 14
+		Lighting.GlobalShadows = false
+		Lighting.FogEnd = 999999
+	else
+		Lighting.Brightness = originalBrightness
+		Lighting.ClockTime = originalClockTime
+		Lighting.GlobalShadows = originalShadows
+		Lighting.FogEnd = originalFogEnd
+	end
+
+	-- 6. Door ESP
+	pcall(function()
+		local currentRooms = workspace:FindFirstChild("CurrentRooms")
+		if currentRooms then
+			local latestRoomNum = workspace:GetAttribute("LatestRoom") or 1
+			local currentRoomFolder = currentRooms:FindFirstChild(tostring(latestRoomNum))
+
+			for _, room in ipairs(currentRooms:GetChildren()) do
+				local door = room:FindFirstChild("Door")
+				if door then
+					local meshPart = door:FindFirstChild("MeshPart") or door:FindFirstChild("Door") or door:FindFirstChild("Base")
+					if meshPart then
+						if settings.DoorESP then
+							if not meshPart:FindFirstChild("CatDoorHighlight") then
+								local highlight = Instance.new("Highlight")
+								highlight.Name = "CatDoorHighlight"
+								highlight.FillColor = Color3.fromRGB(0, 150, 255)
+								highlight.FillTransparency = 0.5
+								highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+								highlight.OutlineTransparency = 0
+								highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+								highlight.Adornee = meshPart
+								highlight.Parent = meshPart
+							end
+
+							if not meshPart:FindFirstChild("CatDoorESP") then
+								local Billboard = Instance.new("BillboardGui")
+								Billboard.Name = "CatDoorESP"
+								Billboard.Size = UDim2.new(0, 120, 0, 50)
+								Billboard.AlwaysOnTop = true
+								Billboard.Adornee = meshPart
+								Billboard.Parent = meshPart
+
+								local TextLabel = Instance.new("TextLabel")
+								TextLabel.Size = UDim2.new(1, 0, 1, 0)
+								TextLabel.BackgroundTransparency = 1
+								TextLabel.Text = "Door: " .. room.Name
+								TextLabel.TextColor3 = Color3.fromRGB(0, 150, 255)
+								TextLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+								TextLabel.TextStrokeTransparency = 0
+								TextLabel.Font = Enum.Font.Code
+								TextLabel.TextSize = 13
+								TextLabel.Parent = Billboard
+							end
+
+							if room == currentRoomFolder and rootPart then
+								local line = meshPart:FindFirstChild("CatDoorTracer")
+								if not line then
+									line = Instance.new("LineHandleAdornment")
+									line.Name = "CatDoorTracer"
+									line.Color3 = Color3.fromRGB(0, 150, 255)
+									line.Thickness = 3
+									line.AlwaysOnTop = true
+									line.ZIndex = 5
+									line.Parent = meshPart
+								end
+								line.Adornee = meshPart
+								line.Length = (rootPart.Position - meshPart.Position).Magnitude
+								line.CFrame = CFrame.lookAt(meshPart.Position, rootPart.Position)
+							end
+						else
+							if meshPart:FindFirstChild("CatDoorHighlight") then meshPart.CatDoorHighlight:Destroy() end
+							if meshPart:FindFirstChild("CatDoorESP") then meshPart.CatDoorESP:Destroy() end
+							if meshPart:FindFirstChild("CatDoorTracer") then meshPart.CatDoorTracer:Destroy() end
+						end
+					end
+				end
+			end
+		end
+	end)
+
+	-- 7. Key ESP (Verde)
+	pcall(function()
+		local currentRooms = workspace:FindFirstChild("CurrentRooms")
+		if currentRooms then
+			for _, room in ipairs(currentRooms:GetChildren()) do
+				local assets = room:FindFirstChild("Assets") or room
+				for _, obj in ipairs(assets:GetDescendants()) do
+					if obj.Name == "KeyObtain" then
+						local hitbox = obj:FindFirstChild("Hitbox")
+						local targetPart = hitbox and (hitbox:FindFirstChild("Key") or hitbox:FindFirstChild("Ring") or hitbox:FindFirstChild("Tag")) or obj:FindFirstChildWhichIsA("BasePart")
+
+						if targetPart then
+							if settings.KeyESP then
+								if not obj:FindFirstChild("CatKeyHighlight") then
+									local hl = Instance.new("Highlight")
+									hl.Name = "CatKeyHighlight"
+									hl.FillColor = Color3.fromRGB(0, 255, 100)
+									hl.FillTransparency = 0.5
+									hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+									hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+									hl.Adornee = obj
+									hl.Parent = obj
+								end
+								if not obj:FindFirstChild("CatKeyESP") then
+									local bg = Instance.new("BillboardGui")
+									bg.Name = "CatKeyESP"
+									bg.Size = UDim2.new(0, 80, 0, 40)
+									bg.AlwaysOnTop = true
+									bg.Adornee = targetPart
+									bg.Parent = obj
+
+									local lbl = Instance.new("TextLabel")
+									lbl.Size = UDim2.new(1, 0, 1, 0)
+									lbl.BackgroundTransparency = 1
+									lbl.Text = "Key"
+									lbl.TextColor3 = Color3.fromRGB(0, 255, 100)
+									lbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+									lbl.TextStrokeTransparency = 0
+									lbl.Font = Enum.Font.Code
+									lbl.TextSize = 13
+									lbl.Parent = bg
+								end
+								if rootPart then
+									local tr = obj:FindFirstChild("CatKeyTracer")
+									if not tr then
+										tr = Instance.new("LineHandleAdornment")
+										tr.Name = "CatKeyTracer"
+										tr.Color3 = Color3.fromRGB(0, 255, 100)
+										tr.Thickness = 2
+										tr.AlwaysOnTop = true
+										tr.Parent = obj
+									end
+									tr.Adornee = targetPart
+									tr.Length = (rootPart.Position - targetPart.Position).Magnitude
+									tr.CFrame = CFrame.lookAt(targetPart.Position, rootPart.Position)
+								end
+							else
+								if obj:FindFirstChild("CatKeyHighlight") then obj.CatKeyHighlight:Destroy() end
+								if obj:FindFirstChild("CatKeyESP") then obj.CatKeyESP:Destroy() end
+								if obj:FindFirstChild("CatKeyTracer") then obj.CatKeyTracer:Destroy() end
+							end
+						end
+					end
+				end
+			end
+		end
+	end)
+
+	-- 8. Item ESP Corrigido (Apenas em Assets, com MeshPart "Handle" e BindableEvent "Grab")
+	pcall(function()
+		local currentRooms = workspace:FindFirstChild("CurrentRooms")
+		if currentRooms then
+			for _, room in ipairs(currentRooms:GetChildren()) do
+				local assets = room:FindFirstChild("Assets")
+				if assets then
+					for _, obj in ipairs(assets:GetDescendants()) do
+						if obj:IsA("Model") then
+							local handle = obj:FindFirstChild("Handle")
+							local grab = obj:FindFirstChild("Grab")
+
+							if handle and handle:IsA("MeshPart") and grab and grab:IsA("BindableEvent") then
+								local targetPart = obj.PrimaryPart or handle
+								if targetPart then
+									if settings.ItemESP then
+										if not obj:FindFirstChild("CatItemHighlight") then
+											local hl = Instance.new("Highlight")
+											hl.Name = "CatItemHighlight"
+											hl.FillColor = Color3.fromRGB(170, 0, 255) -- Roxo
+											hl.FillTransparency = 0.5
+											hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+											hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+											hl.Adornee = obj
+											hl.Parent = obj
+										end
+										if not obj:FindFirstChild("CatItemESP") then
+											local bg = Instance.new("BillboardGui")
+											bg.Name = "CatItemESP"
+											bg.Size = UDim2.new(0, 120, 0, 40)
+											bg.AlwaysOnTop = true
+											bg.Adornee = targetPart
+											bg.Parent = obj
+
+											local lbl = Instance.new("TextLabel")
+											lbl.Size = UDim2.new(1, 0, 1, 0)
+											lbl.BackgroundTransparency = 1
+											lbl.Text = "(" .. obj.Name .. ")"
+											lbl.TextColor3 = Color3.fromRGB(170, 0, 255)
+											lbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+											lbl.TextStrokeTransparency = 0
+											lbl.Font = Enum.Font.Code
+											lbl.TextSize = 12
+											lbl.Parent = bg
+										end
+									else
+										if obj:FindFirstChild("CatItemHighlight") then obj.CatItemHighlight:Destroy() end
+										if obj:FindFirstChild("CatItemESP") then obj.CatItemESP:Destroy() end
+									end
+								end
+							end
+						end
+					end
+				end
+			end
+		end
+	end)
+
+	-- 9. Entity ESP (Vermelho)
+	pcall(function()
+		for _, v in ipairs(workspace:GetChildren()) do
+			if v:IsA("Model") and (v.Name == "RushMoving" or v.Name == "AmbushMoving" or v.Name == "Eyes" or v.Name == "Halt" or v.Name == "Figure" or v.Name == "SeekRig" or v.Name == "Glitch" or v.Name == "A60" or v.Name == "A90") then
+				local part = v.PrimaryPart or v:FindFirstChildWhichIsA("BasePart")
+				if part then
+					if settings.EntityESP then
+						if not v:FindFirstChild("CatEntityHighlight") then
+							local hl = Instance.new("Highlight")
+							hl.Name = "CatEntityHighlight"
+							hl.FillColor = Color3.fromRGB(255, 50, 50)
+							hl.FillTransparency = 0.4
+							hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+							hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+							hl.Adornee = v
+							hl.Parent = v
+						end
+						if not v:FindFirstChild("CatEntityESP") then
+							local bg = Instance.new("BillboardGui")
+							bg.Name = "CatEntityESP"
+							bg.Size = UDim2.new(0, 100, 0, 40)
+							bg.AlwaysOnTop = true
+							bg.Adornee = part
+							bg.Parent = v
+
+							local lbl = Instance.new("TextLabel")
+							lbl.Size = UDim2.new(1, 0, 1, 0)
+							lbl.BackgroundTransparency = 1
+							lbl.Text = v.Name
+							lbl.TextColor3 = Color3.fromRGB(255, 50, 50)
+							lbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+							lbl.TextStrokeTransparency = 0
+							lbl.Font = Enum.Font.Code
+							lbl.TextSize = 13
+							lbl.Parent = bg
+						end
+						if rootPart then
+							local tr = part:FindFirstChild("CatEntityTracer")
+							if not tr then
+								tr = Instance.new("LineHandleAdornment")
+								tr.Name = "CatEntityTracer"
+								tr.Color3 = Color3.fromRGB(255, 50, 50)
+								tr.Thickness = 3
+								tr.AlwaysOnTop = true
+								tr.Parent = part
+							end
+							tr.Adornee = part
+							tr.Length = (rootPart.Position - part.Position).Magnitude
+							tr.CFrame = CFrame.lookAt(part.Position, rootPart.Position)
+						end
+					else
+						if v:FindFirstChild("CatEntityHighlight") then v.CatEntityHighlight:Destroy() end
+						if v:FindFirstChild("CatEntityESP") then v.CatEntityESP:Destroy() end
+						if part:FindFirstChild("CatEntityTracer") then part.CatEntityTracer:Destroy() end
+					end
+				end
+			end
+		end
+	end)
+
+	-- 10. Bypass Screech, A90 & Eyes
+	pcall(function()
+		if settings.BypassScreech then
+			local screech = LocalPlayer.PlayerGui:FindFirstChild("Screech") or workspace:FindFirstChild("Screech")
+			if screech then screech:Destroy() end
+		end
+		if settings.BypassA90 then
+			local a90 = LocalPlayer.PlayerGui:FindFirstChild("A90") or workspace:FindFirstChild("A90")
+			if a90 then a90:Destroy() end
+		end
+		if settings.BypassEyes then
+			local eyes = workspace:FindFirstChild("Eyes") or workspace:FindFirstChild("EyesMoving")
+			if eyes then eyes:Destroy() end
+		end
+	end)
+
+	-- 11. Notify Entities
+	if settings.NotifyEntities then
+		pcall(function()
+			for _, v in pairs(workspace:GetChildren()) do
+				if v:IsA("Model") and (v.Name == "RushMoving" or v.Name == "AmbushMoving" or v.Name == "Eyes" or v.Name == "Halt" or v.Name == "Figure" or v.Name == "SeekRig" or v.Name == "Glitch" or v.Name == "A60" or v.Name == "A90" or v.Name == "A120") then
+					if not notifiedEntities[v] then
+						notifiedEntities[v] = true
+						ShowNotification("Entity Spawned: " .. v.Name .. "!")
+					end
+				end
+			end
+		end)
+	end
+
+	-- 12. Notify Items (Excluindo moedas, bandagens, velas e copos de cerveja)
+	if settings.NotifyItems then
+		pcall(function()
+			local currentRooms = workspace:FindFirstChild("CurrentRooms")
+			if currentRooms then
+				for _, room in ipairs(currentRooms:GetChildren()) do
+					local assets = room:FindFirstChild("Assets") or room
+					for _, obj in ipairs(assets:GetDescendants()) do
+						if (obj:IsA("Model") or obj:IsA("BasePart")) and obj:FindFirstChildOfClass("ProximityPrompt") then
+							local nameL = obj.Name:lower()
+							local isExcluded = nameL:find("coin") or nameL:find("bandage") or nameL:find("candle") or nameL:find("beer") or nameL:find("glowstick")
+
+							if not isExcluded and not notifiedItems[obj] then
+								notifiedItems[obj] = true
+								ShowNotification("Item Spawned: " .. obj.Name)
+							end
+						end
+					end
+				end
+			end
+		end)
+	end
+	
+	-- 13. Infinite Items (Lockpick, Multitool, Shears, SkeletonKey)
+	pcall(function()
+		if settings.InfiniteItems then
+			local char = LocalPlayer.Character
+			local humanoidRootPart = char and char:FindFirstChild("HumanoidRootPart")
+			local tool = char and char:FindFirstChildOfClass("Tool")
+
+			if tool and humanoidRootPart then
+				local toolName = tool.Name
+				if toolName == "Lockpick" or toolName == "Multitool" or toolName == "Shears" or toolName == "SkeletonKey" then
+					-- Detecta se o player está ativando/usando a ferramenta
+					if tool:FindFirstChild("Activated") or tool:FindFirstChild("Using") or UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
+						if not tool:GetAttribute("IsDuplicating") then
+							tool:SetAttribute("IsDuplicating", true)
+							task.spawn(function()
+								local currentPos = humanoidRootPart.CFrame
+								-- Dropar a ferramenta
+								tool.Parent = workspace
+								task.wait(0.15)
+								-- Pegar de volta
+								if tool and tool.Parent == workspace then
+									tool.Parent = char
+								end
+								task.wait(0.5)
+								if tool then
+									tool:SetAttribute("IsDuplicating", nil)
+								end
+							end)
+						end
+					end
+				end
+			end
+		end
+	end)
+end)
+
+-- ==================== AUTO INTERACT INTELIGENTE (GENERAL) ====================
+task.spawn(function()
+	while task.wait(0.2) do
+		local settings = _G.CatHubSettings or CatHubSettings
+		if settings and settings.AutoInteract then
+			pcall(function()
+				local char = LocalPlayer.Character
+				local rootPart = char and char:FindFirstChild("HumanoidRootPart")
+				local currentRooms = workspace:FindFirstChild("CurrentRooms")
+
+				if rootPart and currentRooms then
+					-- Checa se o inventário está cheio (limite de 4 itens)
+					local backpackCount = #LocalPlayer.Backpack:GetChildren()
+					local equippedTool = char:FindFirstChildOfClass("Tool")
+					local totalItems = backpackCount + (equippedTool and 1 or 0)
+					local inventoryFull = totalItems >= 4
+
+					-- Verifica se o player tem chave na mão ou inventário para abrir portas trancadas
+					local hasKey = false
+					for _, item in ipairs(LocalPlayer.Backpack:GetChildren()) do
+						if item.Name:lower():find("key") then hasKey = true end
+					end
+					if equippedTool and equippedTool.Name:lower():find("key") then hasKey = true end
+
+					for _, room in ipairs(currentRooms:GetChildren()) do
+						-- 1. Abrir portas trancadas se tiver chave
+						local door = room:FindFirstChild("Door")
+						if door and door:FindFirstChild("Lock") and hasKey then
+							local prompt = door:FindFirstChildOfClass("ProximityPrompt", true)
+							local part = door:FindFirstChildWhichIsA("BasePart")
+							if prompt and part and (rootPart.Position - part.Position).Magnitude < 12 then
+								fireproximityprompt(prompt)
+							end
+						end
+
+						-- 2. Interagir com itens (chaves, moedas, itens em mesas/gavetas) - ignorando a loja do Jeff
+						local assets = room:FindFirstChild("Assets") or room
+						for _, obj in ipairs(assets:GetDescendants()) do
+							-- Evita interagir com qualquer coisa da loja do Jeff
+							local isJeffShop = false
+							local p = obj.Parent
+							while p do
+								if p.Name:lower():find("shop") or p.Name:lower():find("jeff") then
+									isJeffShop = true
+									break
+								end
+								p = p.Parent
+							end
+
+							if not isJeffShop and obj:IsA("ProximityPrompt") then
+								local targetPart = obj.Parent:IsA("BasePart") and obj.Parent or obj.Parent:FindFirstChildWhichIsA("BasePart")
+								if targetPart and (rootPart.Position - targetPart.Position).Magnitude < 12 then
+									local promptName = obj.ObjectText:lower()
+									local isCoinOrKey = promptName:find("coin") or promptName:find("key") or obj.Name:lower():find("coin") or obj.Name:lower():find("key")
+
+									-- Se for moeda/chave pega direto; se for item comum, verifica se inventário não está cheio
+									if isCoinOrKey or not inventoryFull then
+										fireproximityprompt(obj)
+									end
+								end
+							end
+						end
+					end
+				end
+			end)
+		end
+	end
+end)
+
+
+-- ==================== ANIMAÇÃO DE ABRIR E FECHAR NO MEIO DA TELA ====================
+local isOpen = false
+
+local function ToggleGuiAnimation()
+	isOpen = not isOpen
+	if isOpen then
+		MainFrame.Visible = true
+		MainFrame.Size = UDim2.new(0, 0, 0, 0)
+		MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+
+		MainFrame:TweenSizeAndPosition(
+			UDim2.new(0, 690, 0, 430), 
+			UDim2.new(0.5, 0, 0.5, 0), 
+			Enum.EasingDirection.Out, 
+			Enum.EasingStyle.Back, 
+			0.35, 
+			true
+		)
+	else
+		MainFrame:TweenSizeAndPosition(
+			UDim2.new(0, 0, 0, 0), 
+			UDim2.new(0.5, 0, 0.5, 0), 
+			Enum.EasingDirection.In, 
+			Enum.EasingStyle.Quad, 
+			0.25, 
+			true, 
+			function()
+				if not isOpen then
+					MainFrame.Visible = false
+				end
+			end
+		)
+	end
+end
+
+ToggleButton.MouseButton1Click:Connect(ToggleGuiAnimation)
+
+MinimizeBtn.MouseButton1Click:Connect(function()
+	if isOpen then ToggleGuiAnimation() end
+end)
+
+
+-- ==================== JANELA DE CONFIRMAÇÃO KILL HUB ====================
+local ConfirmGui = Instance.new("Frame")
+ConfirmGui.Name = "ConfirmGui"
+ConfirmGui.Size = UDim2.new(0, 320, 0, 150)
+ConfirmGui.Position = UDim2.new(0.5, -160, 0.5, -75)
+ConfirmGui.BackgroundColor3 = Color3.fromRGB(15, 15, 22)
+ConfirmGui.BorderSizePixel = 0
+ConfirmGui.Visible = false
+ConfirmGui.ZIndex = 20
+ConfirmGui.Parent = CatHubGui
+
+local ConfirmCorner = Instance.new("UICorner")
+ConfirmCorner.CornerRadius = UDim.new(0, 10)
+ConfirmCorner.Parent = ConfirmGui
+
+local ConfirmStroke = Instance.new("UIStroke")
+ConfirmStroke.Color = Color3.fromRGB(80, 55, 120)
+ConfirmStroke.Thickness = 1.5
+ConfirmStroke.Parent = ConfirmGui
+
+local ConfirmText = Instance.new("TextLabel")
+ConfirmText.Size = UDim2.new(1, -20, 0, 60)
+ConfirmText.Position = UDim2.new(0, 10, 0, 15)
+ConfirmText.BackgroundTransparency = 1
+ConfirmText.Text = "Do you really want to kill Cat Hub script?"
+ConfirmText.TextColor3 = Color3.fromRGB(240, 240, 250)
+ConfirmText.Font = Enum.Font.Code
+ConfirmText.TextSize = 13
+ConfirmText.TextWrapped = true
+ConfirmText.Parent = ConfirmGui
+
+local YesButton = Instance.new("TextButton")
+YesButton.Size = UDim2.new(0, 120, 0, 35)
+YesButton.Position = UDim2.new(0, 25, 0, 90)
+YesButton.BackgroundColor3 = Color3.fromRGB(190, 50, 50)
+YesButton.Text = "Yes"
+YesButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+YesButton.Font = Enum.Font.Code
+YesButton.TextSize = 14
+YesButton.BorderSizePixel = 0
+YesButton.Parent = ConfirmGui
+
+local YesCorner = Instance.new("UICorner")
+YesCorner.CornerRadius = UDim.new(0, 6)
+YesCorner.Parent = YesButton
+
+local NoButton = Instance.new("TextButton")
+NoButton.Size = UDim2.new(0, 120, 0, 35)
+NoButton.Position = UDim2.new(1, -145, 0, 90)
+NoButton.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
+NoButton.Text = "No"
+NoButton.TextColor3 = Color3.fromRGB(220, 220, 230)
+NoButton.Font = Enum.Font.Code
+NoButton.TextSize = 14
+NoButton.BorderSizePixel = 0
+NoButton.Parent = ConfirmGui
+
+local NoCorner = Instance.new("UICorner")
+NoCorner.CornerRadius = UDim.new(0, 6)
+NoCorner.Parent = NoButton
+
+KillBtn.MouseButton1Click:Connect(function()
+	ConfirmGui.Visible = true
+end)
+
+NoButton.MouseButton1Click:Connect(function()
+	ConfirmGui.Visible = false
+end)
+
+YesButton.MouseButton1Click:Connect(function()
+	CatHubGui:Destroy()
+end)
