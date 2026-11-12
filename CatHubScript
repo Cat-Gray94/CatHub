@@ -119,10 +119,10 @@ ToggleStroke.Color = Color3.fromRGB(110, 70, 200)
 ToggleStroke.Thickness = 1.5
 ToggleStroke.Parent = ToggleButton
 
--- Janela Principal (Centralizada perfeitamente no meio da tela)
+-- Janela Principal (Redimensionada para Celular / Telas Menores)
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 690, 0, 430)
+MainFrame.Size = UDim2.new(0, 480, 0, 280) -- Tamanho compacto para não cobrir a tela toda
 MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
 MainFrame.BackgroundColor3 = Color3.fromRGB(13, 13, 18)
@@ -1582,13 +1582,14 @@ local function ToggleGuiAnimation()
 		MainFrame.Size = UDim2.new(0, 0, 0, 0)
 		MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
 
+		-- Na função de animação de abertura (ToggleGuiAnimation):
 		MainFrame:TweenSizeAndPosition(
-			UDim2.new(0, 690, 0, 430), 
-			UDim2.new(0.5, 0, 0.5, 0), 
-			Enum.EasingDirection.Out, 
-			Enum.EasingStyle.Back, 
-			0.35, 
-			true
+    		UDim2.new(0, 480, 0, 280), -- Atualizado para o novo tamanho compacto
+    		UDim2.new(0.5, 0, 0.5, 0), 
+    		Enum.EasingDirection.Out, 
+    		Enum.EasingStyle.Back, 
+    		0.35, 
+    		true
 		)
 	else
 		MainFrame:TweenSizeAndPosition(
