@@ -1167,95 +1167,72 @@ RunService.RenderStepped:Connect(function()
 		Lighting.FogEnd = originalFogEnd
 	end
 
-            -- Door ESP Cirúrgico (Door, CrossBoards, Knob, Plate, Sign, Lock, Hole, Metal, Thing)
+                -- Door ESP Limpo e Preciso
     pcall(function()
         local currentRooms = workspace:FindFirstChild("CurrentRooms")
         if currentRooms then
             for _, room in ipairs(currentRooms:GetChildren()) do
                 local door = room:FindFirstChild("Door")
                 if door then
-                    if settings.DoorESP then
-                        -- Destaca o model principal da porta se não tiver highlight
-                        if not door:FindFirstChild("CatDoorHighlight") then
-                            local highlight = Instance.new("Highlight")
-                            highlight.Name = "CatDoorHighlight"
-                            highlight.FillColor = Color3.fromRGB(0, 150, 255)
-                            highlight.FillTransparency = 0.5
-                            highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-                            highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-                            highlight.Adornee = door
-                            highlight.Parent = door
-                        end
-
-                        -- Billboard / Texto do ESP na porta
-                        if not door:FindFirstChild("CatDoorESP") then
-                            local Billboard = Instance.new("BillboardGui")
-                            Billboard.Name = "CatDoorESP"
-                            Billboard.Size = UDim2.new(0, 120, 0, 50)
-                            Billboard.AlwaysOnTop = true
-                            Billboard.Adornee = door:FindFirstChild("Door") or door:FindFirstChildWhichIsA("BasePart")
-                            Billboard.Parent = door
-
-                            local TextLabel = Instance.new("TextLabel")
-                            TextLabel.Size = UDim2.new(1, 0, 1, 0)
-                            TextLabel.BackgroundTransparency = 1
-                            TextLabel.Text = "Door: " .. room.Name
-                            TextLabel.TextColor3 = Color3.fromRGB(0, 150, 255)
-                            TextLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-                            TextLabel.TextStrokeTransparency = 0
-                            TextLabel.Font = Enum.Font.Code
-                            TextLabel.TextSize = 13
-                            TextLabel.Parent = Billboard
-                        end
-
-                        -- Varre os elementos específicos solicitados dentro da porta
-                        local targetNames = {"Door", "CrossBoards", "Knob", "Plate", "Sign"}
-                        for _, name in ipairs(targetNames) do
-                            local part = door:FindFirstChild(name, true)
-                            if part and part:IsA("BasePart") and not part:FindFirstChild("SubHighlight") then
-                                local subHl = Instance.new("Highlight")
-                                subHl.Name = "SubHighlight"
-                                subHl.FillColor = Color3.fromRGB(0, 150, 255)
-                                subHl.FillTransparency = 0.6
-                                subHl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-                                subHl.Adornee = part
-                                subHl.Parent = part
-                            end
-                        end
-
-                        -- Verifica o Lock e suas subpartes (Hole, Metal, Thing)
-                        local lockPart = door:FindFirstChild("Lock")
-                        if lockPart then
-                            if not lockPart:FindFirstChild("SubHighlight") then
-                                local lockHl = Instance.new("Highlight")
-                                lockHl.Name = "SubHighlight"
-                                lockHl.FillColor = Color3.fromRGB(0, 150, 255)
-                                lockHl.FillTransparency = 0.6
-                                lockHl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-                                lockHl.Adornee = lockPart
-                                lockHl.Parent = lockPart
+                    -- Pega a parte física principal da porta (o MeshPart da folha da porta)
+                    local doorMesh = door:FindFirstChild("Door") or door:FindFirstChild("MeshPart") or door:FindFirstChildWhichIsA("BasePart")
+                    
+                    if doorMesh then
+                        if settings.DoorESP then
+                            -- Cria o Highlight APENAS na folha real da porta (sem caixa gigante no ar)
+                            if not doorMesh:FindFirstChild("CatDoorHighlight") then
+                                local highlight = Instance.new("Highlight")
+                                highlight.Name = "CatDoorHighlight"
+                                highlight.FillColor = Color3.fromRGB(0, 150, 255)
+                                highlight.FillTransparency = 0.5
+                                highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                                highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                                highlight.Adornee = doorMesh
+                                highlight.Parent = doorMesh
                             end
 
-                            local lockSubNames = {"Hole", "Metal", "Thing"}
-                            for _, subName in ipairs(lockSubNames) do
-                                local subPart = lockPart:FindFirstChild(subName, true)
-                                if subPart and subPart:IsA("BasePart") and not subPart:FindFirstChild("SubHighlight") then
+                            -- Billboard / Texto do ESP na porta
+                            if not door:FindFirstChild("CatDoorESP") then
+                                local Billboard = Instance.new("BillboardGui")
+                                Billboard.Name = "CatDoorESP"
+                                Billboard.Size = UDim2.new(0, 120, 0, 50)
+                                Billboard.AlwaysOnTop = true
+                                Billboard.Adornee = doorMesh
+                                Billboard.Parent = door
+
+                                local TextLabel = Instance.new("TextLabel")
+                                TextLabel.Size = UDim2.new(1, 0, 1, 0)
+                                TextLabel.BackgroundTransparency = 1
+                                TextLabel.Text = "Door: " .. room.Name
+                                TextLabel.TextColor3 = Color3.fromRGB(0, 150, 255)
+                                TextLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                                TextLabel.TextStrokeTransparency = 0
+                                TextLabel.Font = Enum.Font.Code
+                                TextLabel.TextSize = 13
+                                TextLabel.Parent = Billboard
+                            end
+
+                            -- Destaca apenas os elementos essenciais específicos sem poluir com linhas brancas em tudo
+                            local targetNames = {"CrossBoards", "Knob", "Plate", "Sign", "Lock"}
+                            for _, name in ipairs(targetNames) do
+                                local part = door:FindFirstChild(name, true)
+                                if part and (part:IsA("BasePart") or part:IsA("Model")) and not part:FindFirstChild("SubHighlight") then
                                     local subHl = Instance.new("Highlight")
                                     subHl.Name = "SubHighlight"
                                     subHl.FillColor = Color3.fromRGB(0, 150, 255)
                                     subHl.FillTransparency = 0.6
                                     subHl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-                                    subHl.Adornee = subPart
-                                    subHl.Parent = subPart
+                                    subHl.Adornee = part
+                                    subHl.Parent = part
                                 end
                             end
-                        end
-                    else
-                        -- Limpa os highlights se desativar o DoorESP
-                        if door:FindFirstChild("CatDoorHighlight") then door.CatDoorHighlight:Destroy() end
-                        if door:FindFirstChild("CatDoorESP") then door.CatDoorESP:Destroy() end
-                        for _, d in ipairs(door:GetDescendants()) do
-                            if d.Name == "SubHighlight" then d:Destroy() end
+                        else
+                            -- Limpeza ao desativar
+                            if doorMesh:FindFirstChild("CatDoorHighlight") then doorMesh.CatDoorHighlight:Destroy() end
+                            if door:FindFirstChild("CatDoorESP") then door:FindFirstChild("CatDoorESP"):Destroy() end
+                            for _, d in ipairs(door:GetDescendants()) do
+                                if d.Name == "SubHighlight" then d:Destroy() end
+                            end
                         end
                     end
                 end
