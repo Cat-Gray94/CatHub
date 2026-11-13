@@ -39,6 +39,8 @@ _G.CatHubSettings = _G.CatHubSettings or {
 	KeyESP = false,
 	ItemESP = false,
 	NotifyItems = false
+    LeverESP = false
+    ClosetESP = false
 }
 
 pcall(function()
@@ -824,6 +826,10 @@ AddToggle(SecEsp, "Light (Fullbright)", "LightEnabled", function(state)
 	CatHubSettings.LightEnabled = state
 end)
 
+AddToggle(SecEsp, "Lever ESP", "LeverESP", function(state) CatHubSettings.LeverESP = state end)
+AddToggle(SecEsp, "Closet ESP", "ClosetESP", function(state) CatHubSettings.ClosetESP = state end)
+
+
 -- ==================== FLOORS E AUTO FLOORS ====================
 
 local SecFloors = CreateSection(FloorsPage, "Auto floors")
@@ -1156,76 +1162,156 @@ RunService.RenderStepped:Connect(function()
 		Lighting.FogEnd = originalFogEnd
 	end
 
-	-- 6. Door ESP
-	pcall(function()
-		local currentRooms = workspace:FindFirstChild("CurrentRooms")
-		if currentRooms then
-			local latestRoomNum = workspace:GetAttribute("LatestRoom") or 1
-			local currentRoomFolder = currentRooms:FindFirstChild(tostring(latestRoomNum))
+        -- Door ESP Atualizado (Abrangendo todos os MeshParts e o Lock)
+    pcall(function()
+        local currentRooms = workspace:FindFirstChild("CurrentRooms")
+        if currentRooms then
+            for _, room in ipairs(currentRooms:GetChildren()) do
+                local door = room:FindFirstChild("Door")
+                if door then
+                    if settings.DoorESP then
+                        if not door:FindFirstChild("CatDoorHighlight") then
+                            local highlight = Instance.new("Highlight")
+                            highlight.Name = "CatDoorHighlight"
+                            highlight.FillColor = Color3.fromRGB(0, 150, 255)
+                            highlight.FillTransparency = 0.5
+                            highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                            highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                            highlight.Adornee = door
+                            highlight.Parent = door
+                        end
+                        if not door:FindFirstChild("CatDoorESP") then
+                            local Billboard = Instance.new("BillboardGui")
+                            Billboard.Name = "CatDoorESP"
+                            Billboard.Size = UDim2.new(0, 120, 0, 50)
+                            Billboard.AlwaysOnTop = true
+                            Billboard.Adornee = door:FindFirstChild("Door") or door:FindFirstChildWhichIsA("BasePart")
+                            Billboard.Parent = door
 
-			for _, room in ipairs(currentRooms:GetChildren()) do
-				local door = room:FindFirstChild("Door")
-				if door then
-					local meshPart = door:FindFirstChild("MeshPart") or door:FindFirstChild("Door") or door:FindFirstChild("Base")
-					if meshPart then
-						if settings.DoorESP then
-							if not meshPart:FindFirstChild("CatDoorHighlight") then
-								local highlight = Instance.new("Highlight")
-								highlight.Name = "CatDoorHighlight"
-								highlight.FillColor = Color3.fromRGB(0, 150, 255)
-								highlight.FillTransparency = 0.5
-								highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-								highlight.OutlineTransparency = 0
-								highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-								highlight.Adornee = meshPart
-								highlight.Parent = meshPart
-							end
+                            local TextLabel = Instance.new("TextLabel")
+                            TextLabel.Size = UDim2.new(1, 0, 1, 0)
+                            TextLabel.BackgroundTransparency = 1
+                            TextLabel.Text = "Door: " .. room.Name
+                            TextLabel.TextColor3 = Color3.fromRGB(0, 150, 255)
+                            TextLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                            TextLabel.TextStrokeTransparency = 0
+                            TextLabel.Font = Enum.Font.Code
+                            TextLabel.TextSize = 13
+                            TextLabel.Parent = Billboard
+                        end
+                    else
+                        if door:FindFirstChild("CatDoorHighlight") then door.CatDoorHighlight:Destroy() end
+                        if door:FindFirstChild("CatDoorESP") then door.CatDoorESP:Destroy() end
+                    end
+                end
+            end
+        end
+    end)
 
-							if not meshPart:FindFirstChild("CatDoorESP") then
-								local Billboard = Instance.new("BillboardGui")
-								Billboard.Name = "CatDoorESP"
-								Billboard.Size = UDim2.new(0, 120, 0, 50)
-								Billboard.AlwaysOnTop = true
-								Billboard.Adornee = meshPart
-								Billboard.Parent = meshPart
+    -- Lever ESP (TimerLever e LeverForGate em Verde)
+    pcall(function()
+        local currentRooms = workspace:FindFirstChild("CurrentRooms")
+        if currentRooms then
+            for _, room in ipairs(currentRooms:GetChildren()) do
+                local assets = room:FindFirstChild("Assets") or room
+                for _, obj in ipairs(assets:GetDescendants()) do
+                    if obj.Name == "TimerLever" or obj.Name == "LeverForGate" then
+                        local targetPart = obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChild("Main") or obj:FindFirstChildWhichIsA("BasePart")) or obj
+                        if targetPart then
+                            if settings.LeverESP then
+                                if not obj:FindFirstChild("CatLeverHighlight") then
+                                    local hl = Instance.new("Highlight")
+                                    hl.Name = "CatLeverHighlight"
+                                    hl.FillColor = Color3.fromRGB(0, 255, 100)
+                                    hl.FillTransparency = 0.5
+                                    hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+                                    hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                                    hl.Adornee = obj
+                                    hl.Parent = obj
+                                end
+                                if not obj:FindFirstChild("CatLeverESP") then
+                                    local bg = Instance.new("BillboardGui")
+                                    bg.Name = "CatLeverESP"
+                                    bg.Size = UDim2.new(0, 80, 0, 40)
+                                    bg.AlwaysOnTop = true
+                                    bg.Adornee = targetPart
+                                    bg.Parent = obj
 
-								local TextLabel = Instance.new("TextLabel")
-								TextLabel.Size = UDim2.new(1, 0, 1, 0)
-								TextLabel.BackgroundTransparency = 1
-								TextLabel.Text = "Door: " .. room.Name
-								TextLabel.TextColor3 = Color3.fromRGB(0, 150, 255)
-								TextLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-								TextLabel.TextStrokeTransparency = 0
-								TextLabel.Font = Enum.Font.Code
-								TextLabel.TextSize = 13
-								TextLabel.Parent = Billboard
-							end
+                                    local lbl = Instance.new("TextLabel")
+                                    lbl.Size = UDim2.new(1, 0, 1, 0)
+                                    lbl.BackgroundTransparency = 1
+                                    lbl.Text = "Lever"
+                                    lbl.TextColor3 = Color3.fromRGB(0, 255, 100)
+                                    lbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                                    lbl.TextStrokeTransparency = 0
+                                    lbl.Font = Enum.Font.Code
+                                    lbl.TextSize = 13
+                                    lbl.Parent = bg
+                                end
+                            else
+                                if obj:FindFirstChild("CatLeverHighlight") then obj.CatLeverHighlight:Destroy() end
+                                if obj:FindFirstChild("CatLeverESP") then obj.CatLeverESP:Destroy() end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end)
 
-							if room == currentRoomFolder and rootPart then
-								local line = meshPart:FindFirstChild("CatDoorTracer")
-								if not line then
-									line = Instance.new("LineHandleAdornment")
-									line.Name = "CatDoorTracer"
-									line.Color3 = Color3.fromRGB(0, 150, 255)
-									line.Thickness = 3
-									line.AlwaysOnTop = true
-									line.ZIndex = 5
-									line.Parent = meshPart
-								end
-								line.Adornee = meshPart
-								line.Length = (rootPart.Position - meshPart.Position).Magnitude
-								line.CFrame = CFrame.lookAt(meshPart.Position, rootPart.Position)
-							end
-						else
-							if meshPart:FindFirstChild("CatDoorHighlight") then meshPart.CatDoorHighlight:Destroy() end
-							if meshPart:FindFirstChild("CatDoorESP") then meshPart.CatDoorESP:Destroy() end
-							if meshPart:FindFirstChild("CatDoorTracer") then meshPart.CatDoorTracer:Destroy() end
-						end
-					end
-				end
-			end
-		end
-	end)
+    -- Closet ESP (Wardrobe com HidePrompt em Laranja)
+    pcall(function()
+        local currentRooms = workspace:FindFirstChild("CurrentRooms")
+        if currentRooms then
+            for _, room in ipairs(currentRooms:GetChildren()) do
+                local assets = room:FindFirstChild("Assets")
+                if assets then
+                    for _, obj in ipairs(assets:GetDescendants()) do
+                        if obj.Name == "Wardrobe" and obj:FindFirstChild("HidePrompt", true) then
+                            local targetPart = obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")) or obj
+                            if targetPart then
+                                if settings.ClosetESP then
+                                    if not obj:FindFirstChild("CatClosetHighlight") then
+                                        local hl = Instance.new("Highlight")
+                                        hl.Name = "CatClosetHighlight"
+                                        hl.FillColor = Color3.fromRGB(255, 140, 0)
+                                        hl.FillTransparency = 0.5
+                                        hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+                                        hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                                        hl.Adornee = obj
+                                        hl.Parent = obj
+                                    end
+                                    if not obj:FindFirstChild("CatClosetESP") then
+                                        local bg = Instance.new("BillboardGui")
+                                        bg.Name = "CatClosetESP"
+                                        bg.Size = UDim2.new(0, 90, 0, 40)
+                                        bg.AlwaysOnTop = true
+                                        bg.Adornee = targetPart
+                                        bg.Parent = obj
+
+                                        local lbl = Instance.new("TextLabel")
+                                        lbl.Size = UDim2.new(1, 0, 1, 0)
+                                        lbl.BackgroundTransparency = 1
+                                        lbl.Text = "Closet"
+                                        lbl.TextColor3 = Color3.fromRGB(255, 140, 0)
+                                        lbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                    -                   lbl.TextStrokeTransparency = 0
+                                        lbl.Font = Enum.Font.Code
+                                        lbl.TextSize = 13
+                                        lbl.Parent = bg
+                                    end
+                                else
+                                    if obj:FindFirstChild("CatClosetHighlight") then obj.CatClosetHighlight:Destroy() end
+                                    if obj:FindFirstChild("CatClosetESP") then obj.CatClosetESP:Destroy() end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end)
+
 
 	-- 7. Key ESP (Verde)
 	pcall(function()
@@ -1353,65 +1439,68 @@ RunService.RenderStepped:Connect(function()
 		end
 	end)
 
-	-- 9. Entity ESP (Vermelho)
-	pcall(function()
-		for _, v in ipairs(workspace:GetChildren()) do
-			if v:IsA("Model") and (v.Name == "RushMoving" or v.Name == "AmbushMoving" or v.Name == "Eyes" or v.Name == "Halt" or v.Name == "Figure" or v.Name == "SeekRig" or v.Name == "Glitch" or v.Name == "A60" or v.Name == "A90" or v.Name == "BashMoving" or v.Name == "Scribbles") then
-				local part = v.PrimaryPart or v:FindFirstChildWhichIsA("BasePart")
-				if part then
-					if settings.EntityESP then
-						if not v:FindFirstChild("CatEntityHighlight") then
-							local hl = Instance.new("Highlight")
-							hl.Name = "CatEntityHighlight"
-							hl.FillColor = Color3.fromRGB(255, 50, 50)
-							hl.FillTransparency = 0.4
-							hl.OutlineColor = Color3.fromRGB(255, 255, 255)
-							hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-							hl.Adornee = v
-							hl.Parent = v
-						end
-						if not v:FindFirstChild("CatEntityESP") then
-							local bg = Instance.new("BillboardGui")
-							bg.Name = "CatEntityESP"
-							bg.Size = UDim2.new(0, 100, 0, 40)
-							bg.AlwaysOnTop = true
-							bg.Adornee = part
-							bg.Parent = v
+        -- Entity ESP com Distância em Studs
+    pcall(function()
+        local char = LocalPlayer.Character
+        local rootPart = char and char:FindFirstChild("HumanoidRootPart")
+        
+        for _, v in ipairs(workspace:GetChildren()) do
+            if v:IsA("Model") and (v.Name == "RushMoving" or v.Name == "AmbushMoving" or v.Name == "Eyes" or v.Name == "Halt" or v.Name == "Figure" or v.Name == "SeekRig" or v.Name == "Glitch" or v.Name == "A60" or v.Name == "A90") then
+                local part = v.PrimaryPart or v:FindFirstChildWhichIsA("BasePart")
+                if part then
+                    if settings.EntityESP then
+                        if not v:FindFirstChild("CatEntityHighlight") then
+                            local hl = Instance.new("Highlight")
+                            hl.Name = "CatEntityHighlight"
+                            hl.FillColor = Color3.fromRGB(255, 50, 50)
+                            hl.FillTransparency = 0.4
+                            hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+                            hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                            hl.Adornee = v
+                            hl.Parent = v
+                        end
+                        
+                        local bg = v:FindFirstChild("CatEntityESP")
+                        local distText = ""
+                        if rootPart and part then
+                            local dist = math.floor((rootPart.Position - part.Position).Magnitude)
+                            distText = " [" .. dist .. "s]" -- 's' de studs ou studs direto
+                        end
 
-							local lbl = Instance.new("TextLabel")
-							lbl.Size = UDim2.new(1, 0, 1, 0)
-							lbl.BackgroundTransparency = 1
-							lbl.Text = v.Name
-							lbl.TextColor3 = Color3.fromRGB(255, 50, 50)
-							lbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-							lbl.TextStrokeTransparency = 0
-							lbl.Font = Enum.Font.Code
-							lbl.TextSize = 13
-							lbl.Parent = bg
-						end
-						if rootPart then
-							local tr = part:FindFirstChild("CatEntityTracer")
-							if not tr then
-								tr = Instance.new("LineHandleAdornment")
-								tr.Name = "CatEntityTracer"
-								tr.Color3 = Color3.fromRGB(255, 50, 50)
-								tr.Thickness = 3
-								tr.AlwaysOnTop = true
-								tr.Parent = part
-							end
-							tr.Adornee = part
-							tr.Length = (rootPart.Position - part.Position).Magnitude
-							tr.CFrame = CFrame.lookAt(part.Position, rootPart.Position)
-						end
-					else
-						if v:FindFirstChild("CatEntityHighlight") then v.CatEntityHighlight:Destroy() end
-						if v:FindFirstChild("CatEntityESP") then v.CatEntityESP:Destroy() end
-						if part:FindFirstChild("CatEntityTracer") then part.CatEntityTracer:Destroy() end
-					end
-				end
-			end
-		end
-	end)
+                        if not bg then
+                            bg = Instance.new("BillboardGui")
+                            bg.Name = "CatEntityESP"
+                            bg.Size = UDim2.new(0, 140, 0, 40)
+                            bg.AlwaysOnTop = true
+                            bg.Adornee = part
+                            bg.Parent = v
+
+                            local lbl = Instance.new("TextLabel")
+                            lbl.Name = "DistLabel"
+                            lbl.Size = UDim2.new(1, 0, 1, 0)
+                            lbl.BackgroundTransparency = 1
+                            lbl.TextColor3 = Color3.fromRGB(255, 50, 50)
+                            lbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                            lbl.TextStrokeTransparency = 0
+                            lbl.Font = Enum.Font.Code
+                            lbl.TextSize = 13
+                            lbl.Parent = bg
+                        end
+                        
+                        local lbl = bg:FindFirstChild("DistLabel")
+                        if lbl then
+                            local dist = rootPart and math.floor((rootPart.Position - part.Position).Magnitude) or 0
+                            lbl.Text = v.Name .. " [" .. dist .. "s]"
+                        end
+                    else
+                        if v:FindFirstChild("CatEntityHighlight") then v.CatEntityHighlight:Destroy() end
+                        if v:FindFirstChild("CatEntityESP") then v.CatEntityESP:Destroy() end
+                    end
+                end
+            end
+        end
+    end)
+
 
 	-- 10. Bypass Screech, A90 & Eyes
 	pcall(function()
@@ -1507,73 +1596,72 @@ task.spawn(function()
     end
 end)
 
--- ==================== AUTO INTERACT INTELIGENTE (GENERAL) ====================
+-- ==================== AUTO INTERACT CORRIGIDO ====================
 task.spawn(function()
-	while task.wait(0.2) do
-		local settings = _G.CatHubSettings or CatHubSettings
-		if settings and settings.AutoInteract then
-			pcall(function()
-				local char = LocalPlayer.Character
-				local rootPart = char and char:FindFirstChild("HumanoidRootPart")
-				local currentRooms = workspace:FindFirstChild("CurrentRooms")
+    while task.wait(0.2) do
+        local settings = _G.CatHubSettings or CatHubSettings
+        if settings and settings.AutoInteract then
+            pcall(function()
+                local char = LocalPlayer.Character
+                local rootPart = char and char:FindFirstChild("HumanoidRootPart")
+                local currentRooms = workspace:FindFirstChild("CurrentRooms")
+                
+                if rootPart and currentRooms then
+                    local backpackCount = #LocalPlayer.Backpack:GetChildren()
+                    local equippedTool = char:FindFirstChildOfClass("Tool")
+                    local totalItems = backpackCount + (equippedTool and 1 or 0)
+                    local inventoryFull = totalItems >= 4
 
-				if rootPart and currentRooms then
-					-- Checa se o inventário está cheio (limite de 4 itens)
-					local backpackCount = #LocalPlayer.Backpack:GetChildren()
-					local equippedTool = char:FindFirstChildOfClass("Tool")
-					local totalItems = backpackCount + (equippedTool and 1 or 0)
-					local inventoryFull = totalItems >= 4
+                    local hasKey = false
+                    for _, item in ipairs(LocalPlayer.Backpack:GetChildren()) do
+                        if item.Name:lower():find("key") then hasKey = true end
+                    end
+                    if equippedTool and equippedTool.Name:lower():find("key") then hasKey = true end
 
-					-- Verifica se o player tem chave na mão ou inventário para abrir portas trancadas
-					local hasKey = false
-					for _, item in ipairs(LocalPlayer.Backpack:GetChildren()) do
-						if item.Name:lower():find("key") then hasKey = true end
-					end
-					if equippedTool and equippedTool.Name:lower():find("key") then hasKey = true end
+                    for _, room in ipairs(currentRooms:GetChildren()) do
+                        -- 1. Abrir portas trancadas com chave
+                        local door = room:FindFirstChild("Door")
+                        if door and door:FindFirstChild("Lock") and hasKey then
+                            local prompt = door:FindFirstChildOfClass("ProximityPrompt", true)
+                            local part = door:FindFirstChildWhichIsA("BasePart")
+                            if prompt and part and (rootPart.Position - part.Position).Magnitude < 12 then
+                                fireproximityprompt(prompt)
+                            end
+                        end
 
-					for _, room in ipairs(currentRooms:GetChildren()) do
-						-- 1. Abrir portas trancadas se tiver chave
-						local door = room:FindFirstChild("Door")
-						if door and door:FindFirstChild("Lock") and hasKey then
-							local prompt = door:FindFirstChildOfClass("ProximityPrompt", true)
-							local part = door:FindFirstChildWhichIsA("BasePart")
-							if prompt and part and (rootPart.Position - part.Position).Magnitude < 12 then
-								fireproximityprompt(prompt)
-							end
-						end
+                        -- 2. Interagir com itens e portas normais (Ignorando completamente armários/HidePrompt e a loja do Jeff)
+                        local assets = room:FindFirstChild("Assets") or room
+                        for _, obj in ipairs(assets:GetDescendants()) do
+                            local isJeffShop = false
+                            local p = obj.Parent
+                            while p do
+                                if p.Name:lower():find("shop") or p.Name:lower():find("jeff") then
+                                    isJeffShop = true
+                                    break
+                                end
+                                p = p.Parent
+                            end
 
-						-- 2. Interagir com itens (chaves, moedas, itens em mesas/gavetas) - ignorando a loja do Jeff
-						local assets = room:FindFirstChild("Assets") or room
-						for _, obj in ipairs(assets:GetDescendants()) do
-							-- Evita interagir com qualquer coisa da loja do Jeff
-							local isJeffShop = false
-							local p = obj.Parent
-							while p do
-								if p.Name:lower():find("shop") or p.Name:lower():find("jeff") then
-									isJeffShop = true
-									break
-								end
-								p = p.Parent
-							end
-
-							if not isJeffShop and obj:IsA("ProximityPrompt") then
-								local targetPart = obj.Parent:IsA("BasePart") and obj.Parent or obj.Parent:FindFirstChildWhichIsA("BasePart")
-								if targetPart and (rootPart.Position - targetPart.Position).Magnitude < 12 then
-									local promptName = obj.ObjectText:lower()
-									local isCoinOrKey = promptName:find("coin") or promptName:find("key") or obj.Name:lower():find("coin") or obj.Name:lower():find("key")
-
-									-- Se for moeda/chave pega direto; se for item comum, verifica se inventário não está cheio
-									if isCoinOrKey or not inventoryFull then
-										fireproximityprompt(obj)
-									end
-								end
-							end
-						end
-					end
-				end
-			end)
-		end
-	end
+                            if not isJeffShop and obj:IsA("ProximityPrompt") then
+                                -- Evita interagir com armários (HidePrompt)
+                                if obj.Name ~= "HidePrompt" then
+                                    local targetPart = obj.Parent:IsA("BasePart") and obj.Parent or obj.Parent:FindFirstChildWhichIsA("BasePart")
+                                    if targetPart and (rootPart.Position - targetPart.Position).Magnitude < 12 then
+                                        local promptName = obj.ObjectText:lower()
+                                        local isCoinOrKey = promptName:find("coin") or promptName:find("key") or obj.Name:lower():find("coin") or obj.Name:lower():find("key")
+                                        
+                                        if isCoinOrKey or not inventoryFull then
+                                            fireproximityprompt(obj)
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+    end
 end)
 
 
