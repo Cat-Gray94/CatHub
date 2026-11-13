@@ -1167,31 +1167,31 @@ RunService.RenderStepped:Connect(function()
 		Lighting.FogEnd = originalFogEnd
 	end
 
-                -- Door ESP Limpo e Preciso
+                    -- Door ESP Limpo (Ignora "Hidden" e deixa linha branca apenas no MeshPart "Door")
     pcall(function()
         local currentRooms = workspace:FindFirstChild("CurrentRooms")
         if currentRooms then
             for _, room in ipairs(currentRooms:GetChildren()) do
                 local door = room:FindFirstChild("Door")
                 if door then
-                    -- Pega a parte física principal da porta (o MeshPart da folha da porta)
-                    local doorMesh = door:FindFirstChild("Door") or door:FindFirstChild("MeshPart") or door:FindFirstChildWhichIsA("BasePart")
-                    
-                    if doorMesh then
+                    -- Busca especificamente o MeshPart chamado "Door" (ignorando o "Hidden")
+                    local doorMesh = door:FindFirstChild("Door")
+                    if doorMesh and doorMesh.Name ~= "Hidden" then
                         if settings.DoorESP then
-                            -- Cria o Highlight APENAS na folha real da porta (sem caixa gigante no ar)
+                            -- 1. Highlight principal COM linha branca APENAS no MeshPart "Door"
                             if not doorMesh:FindFirstChild("CatDoorHighlight") then
                                 local highlight = Instance.new("Highlight")
                                 highlight.Name = "CatDoorHighlight"
                                 highlight.FillColor = Color3.fromRGB(0, 150, 255)
                                 highlight.FillTransparency = 0.5
                                 highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                                highlight.OutlineTransparency = 0 -- Linha branca visível só aqui
                                 highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
                                 highlight.Adornee = doorMesh
                                 highlight.Parent = doorMesh
                             end
 
-                            -- Billboard / Texto do ESP na porta
+                            -- 2. Texto do ESP na porta
                             if not door:FindFirstChild("CatDoorESP") then
                                 local Billboard = Instance.new("BillboardGui")
                                 Billboard.Name = "CatDoorESP"
@@ -1212,15 +1212,16 @@ RunService.RenderStepped:Connect(function()
                                 TextLabel.Parent = Billboard
                             end
 
-                            -- Destaca apenas os elementos essenciais específicos sem poluir com linhas brancas em tudo
+                            -- 3. Partes secundárias em azul SEM linha branca (OutlineTransparency = 1)
                             local targetNames = {"CrossBoards", "Knob", "Plate", "Sign", "Lock"}
                             for _, name in ipairs(targetNames) do
                                 local part = door:FindFirstChild(name, true)
-                                if part and (part:IsA("BasePart") or part:IsA("Model")) and not part:FindFirstChild("SubHighlight") then
+                                if part and part.Name ~= "Hidden" and (part:IsA("BasePart") or part:IsA("Model")) and not part:FindFirstChild("SubHighlight") then
                                     local subHl = Instance.new("Highlight")
                                     subHl.Name = "SubHighlight"
                                     subHl.FillColor = Color3.fromRGB(0, 150, 255)
-                                    subHl.FillTransparency = 0.6
+                                    subHl.FillTransparency = 0.5
+                                    subHl.OutlineTransparency = 1 -- Remove a linha branca das subpartes
                                     subHl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
                                     subHl.Adornee = part
                                     subHl.Parent = part
