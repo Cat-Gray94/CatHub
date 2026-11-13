@@ -40,7 +40,7 @@ _G.CatHubSettings = _G.CatHubSettings or {
 	ItemESP = false,
 	NotifyItems = false,
     LeverESP = false,
-    ClosetESP = false
+    ClosetESP = false,
 }
 
 pcall(function()
