@@ -1356,7 +1356,7 @@ RunService.RenderStepped:Connect(function()
 	-- 9. Entity ESP (Vermelho)
 	pcall(function()
 		for _, v in ipairs(workspace:GetChildren()) do
-			if v:IsA("Model") and (v.Name == "RushMoving" or v.Name == "AmbushMoving" or v.Name == "Eyes" or v.Name == "Halt" or v.Name == "Figure" or v.Name == "SeekRig" or v.Name == "Glitch" or v.Name == "A60" or v.Name == "A90" or v.Name == "Bash" or v.Name == "Scribbles") then
+			if v:IsA("Model") and (v.Name == "RushMoving" or v.Name == "AmbushMoving" or v.Name == "Eyes" or v.Name == "Halt" or v.Name == "Figure" or v.Name == "SeekRig" or v.Name == "Glitch" or v.Name == "A60" or v.Name == "A90" or v.Name == "BashMoving" or v.Name == "Scribbles") then
 				local part = v.PrimaryPart or v:FindFirstChildWhichIsA("BasePart")
 				if part then
 					if settings.EntityESP then
@@ -1433,7 +1433,7 @@ RunService.RenderStepped:Connect(function()
 	if settings.NotifyEntities then
 		pcall(function()
 			for _, v in pairs(workspace:GetChildren()) do
-				if v:IsA("Model") and (v.Name == "RushMoving" or v.Name == "AmbushMoving" or v.Name == "Eyes" or v.Name == "Halt" or v.Name == "Figure" or v.Name == "SeekRig" or v.Name == "Glitch" or v.Name == "A60" or v.Name == "A90" or v.Name == "A120") then
+				if v:IsA("Model") and (v.Name == "RushMoving" or v.Name == "AmbushMoving" or v.Name == "Eyes" or v.Name == "Halt" or v.Name == "Figure" or v.Name == "SeekRig" or v.Name == "Glitch" or v.Name == "A60" or v.Name == "A90" or v.Name == "A120" or v.Name == "BashMoving" or v.Name == "Scribbles") then
 					if not notifiedEntities[v] then
 						notifiedEntities[v] = true
 						ShowNotification("Entity Spawned: " .. v.Name .. "!")
