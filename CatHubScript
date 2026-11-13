@@ -38,7 +38,9 @@ _G.CatHubSettings = _G.CatHubSettings or {
 	EntityESP = false,
 	KeyESP = false,
 	ItemESP = false,
-	NotifyItems = false
+	NotifyItems = false,
+    LeverESP = false,
+    ClosetESP = false
 }
 
 pcall(function()
