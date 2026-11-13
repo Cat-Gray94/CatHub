@@ -949,11 +949,11 @@ SaveConfigBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
--- ==================== AUTO HOTEL (PATHFIND NODES) ====================
+-- ==================== AUTO HOTEL CORRIGIDO (PATHFIND NODES) ====================
 task.spawn(function()
 	local processedRooms = {}
 
-	while task.wait(0.1) do
+	while task.wait(0.2) do
 		local settings = _G.CatHubSettings or CatHubSettings
 		if settings and settings.AutoHotel then
 			pcall(function()
@@ -970,7 +970,6 @@ task.spawn(function()
 						local nodesFolder = roomFolder:FindFirstChild("PathfindNodes")
 
 						if nodesFolder then
-							-- Coleta e ordena os nós numericamente (1, 2, 3...)
 							local nodes = {}
 							for _, node in ipairs(nodesFolder:GetChildren()) do
 								local num = tonumber(node.Name)
@@ -983,34 +982,36 @@ task.spawn(function()
 								return a.Index < b.Index
 							end)
 
-							-- Move o player por cada nó em ordem rigorosa
 							for _, nodeData in ipairs(nodes) do
-								if not settings.AutoHotel then break end
+								if not (_G.CatHubSettings.AutoHotel or CatHubSettings.AutoHotel) then break end
 								local targetPos = nodeData.Part.Position
-								humanoid:MoveTo(targetPos)
-
-								-- Aguarda o player chegar perto do nó atual antes de ir pro próximo
+								
+								-- Força o movimento continuamente caso o MoveTo "expire"
 								local startTime = tick()
 								repeat
-									task.wait(0.05)
-								until not settings.AutoHotel or (rootPart.Position - targetPos).Magnitude < 4 or (tick() - startTime) > 2.5
+									if humanoid and rootPart then
+										humanoid:MoveTo(targetPos)
+									end
+									task.wait(0.1)
+								until not (_G.CatHubSettings.AutoHotel or CatHubSettings.AutoHotel) or (rootPart.Position * Vector3.new(1,0,1) - targetPos * Vector3.new(1,0,1)).Magnitude < 3 or (tick() - startTime) > 3.5
 							end
 						end
 
-						-- Ao terminar os nós, vai até a porta da sala
+						-- Vai até a porta da sala ao terminar os nós
 						local door = roomFolder:FindFirstChild("Door")
 						local doorPart = door and (door:FindFirstChild("MeshPart") or door:FindFirstChild("Door") or door:FindFirstChild("Base"))
 						if doorPart then
-							humanoid:MoveTo(doorPart.Position)
+							local doorStartTime = tick()
 							repeat
-								task.wait(0.05)
-							until not settings.AutoHotel or (rootPart.Position - doorPart.Position).Magnitude < 5
+								if humanoid and rootPart then
+									humanoid:MoveTo(doorPart.Position)
+								end
+								task.wait(0.1)
+							until not (_G.CatHubSettings.AutoHotel or CatHubSettings.AutoHotel) or (rootPart.Position * Vector3.new(1,0,1) - doorPart.Position * Vector3.new(1,0,1)).Magnitude < 4 or (tick() - doorStartTime) > 4
 						end
 
-						-- Salva a sala como processada para evitar loop e limpa referências antigas para poupar memória
 						processedRooms[roomFolder] = true
 
-						-- Limpeza preventiva de salas muito antigas da tabela para evitar lag/memory leak
 						for oldRoom, _ in pairs(processedRooms) do
 							if oldRoom and oldRoom.Parent ~= currentRooms then
 								processedRooms[oldRoom] = nil
