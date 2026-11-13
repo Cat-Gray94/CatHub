@@ -1167,31 +1167,30 @@ RunService.RenderStepped:Connect(function()
 		Lighting.FogEnd = originalFogEnd
 	end
 
-                    -- Door ESP Limpo (Ignora "Hidden" e deixa linha branca apenas no MeshPart "Door")
+        -- Door ESP Limpo (Linha branca no "Door" e "CrossBoards", e número da sala + 1)
     pcall(function()
         local currentRooms = workspace:FindFirstChild("CurrentRooms")
         if currentRooms then
             for _, room in ipairs(currentRooms:GetChildren()) do
                 local door = room:FindFirstChild("Door")
                 if door then
-                    -- Busca especificamente o MeshPart chamado "Door" (ignorando o "Hidden")
                     local doorMesh = door:FindFirstChild("Door")
                     if doorMesh and doorMesh.Name ~= "Hidden" then
                         if settings.DoorESP then
-                            -- 1. Highlight principal COM linha branca APENAS no MeshPart "Door"
+                            -- 1. Highlight principal COM linha branca no MeshPart "Door"
                             if not doorMesh:FindFirstChild("CatDoorHighlight") then
                                 local highlight = Instance.new("Highlight")
                                 highlight.Name = "CatDoorHighlight"
                                 highlight.FillColor = Color3.fromRGB(0, 150, 255)
                                 highlight.FillTransparency = 0.5
                                 highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-                                highlight.OutlineTransparency = 0 -- Linha branca visível só aqui
+                                highlight.OutlineTransparency = 0
                                 highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
                                 highlight.Adornee = doorMesh
                                 highlight.Parent = doorMesh
                             end
 
-                            -- 2. Texto do ESP na porta
+                            -- 2. Texto do ESP mostrando o número da sala + 1
                             if not door:FindFirstChild("CatDoorESP") then
                                 local Billboard = Instance.new("BillboardGui")
                                 Billboard.Name = "CatDoorESP"
@@ -1200,10 +1199,13 @@ RunService.RenderStepped:Connect(function()
                                 Billboard.Adornee = doorMesh
                                 Billboard.Parent = door
 
+                                local roomNum = tonumber(room.Name)
+                                local displayNum = roomNum and tostring(roomNum + 1) or room.Name
+
                                 local TextLabel = Instance.new("TextLabel")
                                 TextLabel.Size = UDim2.new(1, 0, 1, 0)
                                 TextLabel.BackgroundTransparency = 1
-                                TextLabel.Text = "Door: " .. room.Name
+                                TextLabel.Text = "Door: " .. displayNum
                                 TextLabel.TextColor3 = Color3.fromRGB(0, 150, 255)
                                 TextLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
                                 TextLabel.TextStrokeTransparency = 0
@@ -1212,7 +1214,7 @@ RunService.RenderStepped:Connect(function()
                                 TextLabel.Parent = Billboard
                             end
 
-                            -- 3. Partes secundárias em azul SEM linha branca (OutlineTransparency = 1)
+                            -- 3. Partes secundárias (CrossBoards com linha branca, o restante sem linha branca)
                             local targetNames = {"CrossBoards", "Knob", "Plate", "Sign", "Lock"}
                             for _, name in ipairs(targetNames) do
                                 local part = door:FindFirstChild(name, true)
@@ -1221,7 +1223,8 @@ RunService.RenderStepped:Connect(function()
                                     subHl.Name = "SubHighlight"
                                     subHl.FillColor = Color3.fromRGB(0, 150, 255)
                                     subHl.FillTransparency = 0.5
-                                    subHl.OutlineTransparency = 1 -- Remove a linha branca das subpartes
+                                    subHl.OutlineColor = Color3.fromRGB(255, 255, 255)
+                                    subHl.OutlineTransparency = (name == "CrossBoards") and 0 or 1
                                     subHl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
                                     subHl.Adornee = part
                                     subHl.Parent = part
