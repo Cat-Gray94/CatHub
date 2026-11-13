@@ -20,7 +20,7 @@ local PathfindingService = game:GetService("PathfindingService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
--- Sistema de Carregamento e Salvamento Automático de Configurações
+-- Sistema de Carregamento e Salvamento Automático (Blindado contra erros de loadstring)
 local autoSaveFileName = "CatHub_AutoSave.json"
 _G.CatHubSettings = _G.CatHubSettings or {
 	SpeedEnabled = false,
@@ -46,9 +46,11 @@ _G.CatHubSettings = _G.CatHubSettings or {
 }
 
 pcall(function()
-	if readfile and isfile(autoSaveFileName) then
-		local decoded = HttpService:JSONDecode(readfile(autoSaveFileName))
-		if decoded and type(decoded) == "table" then
+	if readfile and isfile and isfile(autoSaveFileName) then
+		local success, decoded = pcall(function()
+			return HttpService:JSONDecode(readfile(autoSaveFileName))
+		end)
+		if success and decoded and type(decoded) == "table" then
 			for k, v in pairs(decoded) do
 				_G.CatHubSettings[k] = v
 			end
