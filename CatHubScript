@@ -1155,6 +1155,33 @@ end)
 
 RefreshConfigList()
 
+-- 1. Função de suporte para calcular a velocidade atual com base nos atributos do jogo
+local Functions = Functions or {}
+
+-- Declaração correta e segura da função de velocidade
+Functions.GetCurrentSpeed = function()
+	local Speed = 15
+	if Character then
+		Speed += Character:GetAttribute("SpeedBoost") or 0
+		Speed += Character:GetAttribute("SpeedBoostBehind") or 0
+		Speed += Character:GetAttribute("SpeedBoostExtra") or 0
+	end
+	return Speed
+end
+
+-- 2. Evento do Slider de Velocidade (dispara o remote de crouch igual ao Abyssal Hub)
+Options.SpeedBoostSlider:OnChanged(function(Value)
+	if RemotesFolder:FindFirstChild("Crouch") then
+		RemotesFolder.Crouch:FireServer(Value and true or Functions.IsCrouching(), true)
+	end
+end)
+
+-- 3. Evento do Toggle de Speed Boost
+Toggles.SpeedBoostToggle:OnChanged(function(Value)
+	if Humanoid then
+		Humanoid.WalkSpeed = Functions.GetCurrentSpeed() + (Value and Options.SpeedBoostSlider.Value or 0)
+	end
+end)
 
 -- ==================== LOGICAS EM TEMPO REAL ====================
 
@@ -1175,11 +1202,10 @@ RunService.RenderStepped:Connect(function()
 	local humanoid = char:FindFirstChildOfClass("Humanoid")
 	local rootPart = char:FindFirstChild("HumanoidRootPart")
 
-	-- 1. Speed Boost otimizado (igual ao Abyssal Hub, usando o sistema do Doors)
-		if settings.SpeedEnabled and humanoid then
-			local speedVal = settings.SpeedVal or 25
-			-- Calcula a velocidade somando a base do jogo com o valor do seu slider
-			humanoid.WalkSpeed = 15 + (Character and (Character:GetAttribute("SpeedBoost") or 0) or 0) + speedVal
+	-- 1 Speed boost dentro do seu loop principal (RenderStepped / MainHandler):
+		if CatHubSettings.SpeedEnabled and humanoid then
+			local speedVal = CatHubSettings.SpeedVal or 25
+			humanoid.WalkSpeed = Functions.GetCurrentSpeed() + speedVal
 		end
 
 	-- 1. Noclip
@@ -1775,32 +1801,6 @@ RunService.RenderStepped:Connect(function()
 		end)
 	end
 end)
-
--- 1. Função de suporte para calcular a velocidade atual com base nos atributos do jogo
-Functions.GetCurrentSpeed = function()
-	local Speed = 15
-	if Character then
-		Speed += Character:GetAttribute("SpeedBoost") or 0
-		Speed += Character:GetAttribute("SpeedBoostBehind") or 0
-		Speed += Character:GetAttribute("SpeedBoostExtra") or 0
-	end
-	return Speed
-end
-
--- 2. Evento do Slider de Velocidade (dispara o remote de crouch igual ao Abyssal Hub)
-Options.SpeedBoostSlider:OnChanged(function(Value)
-	if RemotesFolder:FindFirstChild("Crouch") then
-		RemotesFolder.Crouch:FireServer(Value and true or Functions.IsCrouching(), true)
-	end
-end)
-
--- 3. Evento do Toggle de Speed Boost
-Toggles.SpeedBoostToggle:OnChanged(function(Value)
-	if Humanoid then
-		Humanoid.WalkSpeed = Functions.GetCurrentSpeed() + (Value and Options.SpeedBoostSlider.Value or 0)
-	end
-end)
-
 
 -- ==================== INFINITE ITEMS CORRIGIDO ====================
 local connectedTools = {}
