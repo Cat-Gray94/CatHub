@@ -826,6 +826,14 @@ AddSlider(SecChar, "Speed Boost", 5, 150, 25, "SpeedVal", function(val)
 	CatHubSettings.SpeedVal = val
 end)
 
+-- No seu slider de velocidade (SpeedVal):
+-- Certifique-se de que o :OnChanged ou a função de callback do slider atualize o remote:
+Options.SpeedVal:OnChanged(function(Value)
+	if RemotesFolder:FindFirstChild("Crouch") then
+		RemotesFolder.Crouch:FireServer(Value and true or Functions.IsCrouching(), true)
+	end
+end)
+
 AddToggle(SecChar, "Fly", "FlyEnabled", function(state)
 	CatHubSettings.FlyEnabled = state
 end)
@@ -1166,6 +1174,13 @@ RunService.RenderStepped:Connect(function()
 	if not char then return end
 	local humanoid = char:FindFirstChildOfClass("Humanoid")
 	local rootPart = char:FindFirstChild("HumanoidRootPart")
+
+	-- 1. Speed Boost otimizado (igual ao Abyssal Hub, usando o sistema do Doors)
+		if settings.SpeedEnabled and humanoid then
+			local speedVal = settings.SpeedVal or 25
+			-- Calcula a velocidade somando a base do jogo com o valor do seu slider
+			humanoid.WalkSpeed = 15 + (Character and (Character:GetAttribute("SpeedBoost") or 0) or 0) + speedVal
+		end
 
 	-- 1. Noclip
 	if settings.NoclipEnabled then
@@ -1759,12 +1774,6 @@ RunService.RenderStepped:Connect(function()
             end
 		end)
 	end
-
-		-- Dentro do seu loop principal (RenderStepped):
-		if Toggles.SpeedBoostToggle.Value and Humanoid then
-			Humanoid.WalkSpeed = Functions.GetCurrentSpeed() + Options.SpeedBoostSlider.Value
-		end
-
 end)
 
 -- 1. Função de suporte para calcular a velocidade atual com base nos atributos do jogo
