@@ -1761,7 +1761,7 @@ RunService.RenderStepped:Connect(function()
 	end
 end)
 
--- ==================== SPEED BOOST DEFINITIVO (ANTY-RUBBERBAND DOORS) ====================
+-- ==================== SPEED BOOST (INSPIRADO NO ABYSSAL HUB) ====================
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -1776,17 +1776,16 @@ RunService.Heartbeat:Connect(function(dt)
 		local rootPart = char and char:FindFirstChild("HumanoidRootPart")
 
 		if humanoid and rootPart then
-			-- Força o jogo a achar que você está a 16 (bula o anticheat de WalkSpeed)
+			-- Mantém o WalkSpeed base em 16 para enganar o anticheat do servidor do Doors
 			humanoid.WalkSpeed = 16 
 			local moveDir = humanoid.MoveDirection
 
 			if moveDir.Magnitude > 0 then
 				local targetSpeed = settings.SpeedVal or 25
-				
-				-- Pega apenas a diferença (ex: se o slider tá em 25, pega só os 9 a mais)
+				-- Calcula apenas o excedente da velocidade de forma segura por frame (dt)
 				local extraSpeed = math.max(0, targetSpeed - 16)
 				
-				-- Move o personagem de forma fluida usando o DeltaTime (dt) do jogo
+				-- Aplica o avanço via CFrame de maneira suave e sincronizada
 				rootPart.CFrame = rootPart.CFrame + (moveDir * extraSpeed * dt)
 			end
 		end
