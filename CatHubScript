@@ -1304,49 +1304,63 @@ RunService.RenderStepped:Connect(function()
         end
     end)
 
-    -- Lever ESP (TimerLever e LeverForGate em Verde)
+        -- Lever ESP Corrigido para TimerLever (Backdoor) e LeverForGate
     pcall(function()
+        local searchFolders = {workspace}
         local currentRooms = workspace:FindFirstChild("CurrentRooms")
         if currentRooms then
-            for _, room in ipairs(currentRooms:GetChildren()) do
-                local assets = room:FindFirstChild("Assets") or room
-                for _, obj in ipairs(assets:GetDescendants()) do
-                    if obj.Name == "TimerLever" or obj.Name == "LeverForGate" then
-                        local targetPart = obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChild("Main") or obj:FindFirstChildWhichIsA("BasePart")) or obj
-                        if targetPart then
-                            if settings.LeverESP then
-                                if not obj:FindFirstChild("CatLeverHighlight") then
+            table.insert(searchFolders, currentRooms)
+        end
+
+        for _, folder in ipairs(searchFolders) do
+            for _, obj in ipairs(folder:GetDescendants()) do
+                if obj:IsA("Model") and (obj.Name == "TimerLever" or obj.Name == "LeverForGate") then
+                    local targetPart = obj:FindFirstChild("Main") or obj:FindFirstChild("DisplayPlate") or obj:FindFirstChildWhichIsA("BasePart")
+                    
+                    if targetPart then
+                        if settings.LeverESP then
+                            -- 1. Pinta individualmente cada parte específica solicitada do TimerLever
+                            local targetPartNames = {"Caps", "GoalStuff", "Inset", "Main", "RotateThis", "WireBottom", "WireTop", "DisplayPlate", "Rim"}
+                            for _, pName in ipairs(targetPartNames) do
+                                local p = obj:FindFirstChild(pName, true)
+                                if p and (p:IsA("BasePart") or p:IsA("MeshPart")) and not p:FindFirstChild("CatTimerHighlight") then
                                     local hl = Instance.new("Highlight")
-                                    hl.Name = "CatLeverHighlight"
+                                    hl.Name = "CatTimerHighlight"
                                     hl.FillColor = Color3.fromRGB(0, 255, 100)
                                     hl.FillTransparency = 0.5
                                     hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+                                    hl.OutlineTransparency = 0
                                     hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-                                    hl.Adornee = obj
-                                    hl.Parent = obj
+                                    hl.Adornee = p
+                                    hl.Parent = p
                                 end
-                                if not obj:FindFirstChild("CatLeverESP") then
-                                    local bg = Instance.new("BillboardGui")
-                                    bg.Name = "CatLeverESP"
-                                    bg.Size = UDim2.new(0, 80, 0, 40)
-                                    bg.AlwaysOnTop = true
-                                    bg.Adornee = targetPart
-                                    bg.Parent = obj
+                            end
 
-                                    local lbl = Instance.new("TextLabel")
-                                    lbl.Size = UDim2.new(1, 0, 1, 0)
-                                    lbl.BackgroundTransparency = 1
-                                    lbl.Text = "Lever"
-                                    lbl.TextColor3 = Color3.fromRGB(0, 255, 100)
-                                    lbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-                                    lbl.TextStrokeTransparency = 0
-                                    lbl.Font = Enum.Font.Code
-                                    lbl.TextSize = 13
-                                    lbl.Parent = bg
-                                end
-                            else
-                                if obj:FindFirstChild("CatLeverHighlight") then obj.CatLeverHighlight:Destroy() end
-                                if obj:FindFirstChild("CatLeverESP") then obj.CatLeverESP:Destroy() end
+                            -- 2. Billboard com o texto verde "Timer Lever"
+                            if not obj:FindFirstChild("CatTimerESP") then
+                                local bg = Instance.new("BillboardGui")
+                                bg.Name = "CatTimerESP"
+                                bg.Size = UDim2.new(0, 110, 0, 40)
+                                bg.AlwaysOnTop = true
+                                bg.Adornee = targetPart
+                                bg.Parent = obj
+
+                                local lbl = Instance.new("TextLabel")
+                                lbl.Size = UDim2.new(1, 0, 1, 0)
+                                lbl.BackgroundTransparency = 1
+                                lbl.Text = "Timer Lever"
+                                lbl.TextColor3 = Color3.fromRGB(0, 255, 100)
+                                lbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                                lbl.TextStrokeTransparency = 0
+                                lbl.Font = Enum.Font.Code
+                                lbl.TextSize = 12
+                                lbl.Parent = bg
+                            end
+                        else
+                            -- Limpeza ao desativar
+                            if obj:FindFirstChild("CatTimerESP") then obj.CatTimerESP:Destroy() end
+                            for _, desc in ipairs(obj:GetDescendants()) do
+                                if desc.Name == "CatTimerHighlight" then desc:Destroy() end
                             end
                         end
                     end
