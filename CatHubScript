@@ -824,14 +824,14 @@ AddToggle(SecChar, "Enable Speed Boost", "SpeedEnabled", function(state)
 end)
 AddSlider(SecChar, "Speed Boost", 5, 150, 25, "SpeedVal", function(val)
 	CatHubSettings.SpeedVal = val
-end)
 
--- No seu slider de velocidade (SpeedVal):
+	-- No seu slider de velocidade (SpeedVal):
 -- Certifique-se de que o :OnChanged ou a função de callback do slider atualize o remote:
 Options.SpeedVal:OnChanged(function(Value)
 	if RemotesFolder:FindFirstChild("Crouch") then
 		RemotesFolder.Crouch:FireServer(Value and true or Functions.IsCrouching(), true)
-	end
+		end
+	end)
 end)
 
 AddToggle(SecChar, "Fly", "FlyEnabled", function(state)
