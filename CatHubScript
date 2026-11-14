@@ -1605,7 +1605,7 @@ RunService.RenderStepped:Connect(function()
             BackdoorLookman = "Lookman",
             SallyLingering = "Sally",
             TellerRig = "Teller",
-            FigureRig = "Figure"
+            FigureRig = "Figure",
             BashMoving = "Bash"
         }
 
