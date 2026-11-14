@@ -24,7 +24,7 @@ local Camera = workspace.CurrentCamera
 local autoSaveFileName = "CatHub_AutoSave.json"
 _G.CatHubSettings = _G.CatHubSettings or {
 	SpeedEnabled = false,
-	SpeedVal = 25,
+	SpeedVal = 5,
 	FlyEnabled = false,
 	FlyVal = 25,
 	NoclipEnabled = false,
@@ -95,7 +95,6 @@ local CatHubGui = Instance.new("ScreenGui")
 CatHubGui.Name = "CatHubGui"
 CatHubGui.ResetOnSpawn = false
 CatHubGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-CatHubGui.IgnoreGuiInset = true
 
 pcall(function()
 	CatHubGui.Parent = CoreGui
