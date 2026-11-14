@@ -1167,20 +1167,7 @@ RunService.RenderStepped:Connect(function()
 	local humanoid = char:FindFirstChildOfClass("Humanoid")
 	local rootPart = char:FindFirstChild("HumanoidRootPart")
 
-			-- 1. Speed Boost com CFrame Bypass (Bula o Anticheat do Doors sem puxar para trás)
-	if humanoid and rootPart then
-		if settings.SpeedEnabled then
-			humanoid.WalkSpeed = 16 -- O servidor acha que você está andando a 16 normal
-			if humanoid.MoveDirection.Magnitude > 0 then
-				local speedVal = settings.SpeedVal or 25
-				-- Desloca a CFrame suavemente na direção do movimento sem acionar o anticheat de física
-				local moveStep = humanoid.MoveDirection * ((speedVal - 16) * 0.022)
-				rootPart.CFrame = rootPart.CFrame + moveStep
-			end
-		end
-	end
-
-	-- 2. Noclip
+	-- 1. Noclip
 	if settings.NoclipEnabled then
 		for _, part in pairs(char:GetDescendants()) do
 			if part:IsA("BasePart") then
@@ -1189,7 +1176,7 @@ RunService.RenderStepped:Connect(function()
 		end
 	end
 
-	-- 3. Fly Definitivo
+	-- 2. Fly Definitivo
 	if settings.FlyEnabled and rootPart then
 		local flySpeed = settings.FlyVal or 25
 		local cam = workspace.CurrentCamera
@@ -1214,7 +1201,7 @@ RunService.RenderStepped:Connect(function()
 		end
 	end
 
-	-- 5. Light (Fullbright Reversível)
+	-- 3. Light (Fullbright Reversível)
 	if settings.LightEnabled then
 		Lighting.Brightness = 2
 		Lighting.ClockTime = 14
@@ -1773,6 +1760,39 @@ RunService.RenderStepped:Connect(function()
 		end)
 	end
 end)
+
+-- ==================== SPEED BOOST DEFINITIVO (ANTY-RUBBERBAND DOORS) ====================
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+RunService.Heartbeat:Connect(function(dt)
+	pcall(function()
+		local settings = _G.CatHubSettings or CatHubSettings
+		if not settings or not settings.SpeedEnabled then return end
+
+		local char = LocalPlayer.Character
+		local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+		local rootPart = char and char:FindFirstChild("HumanoidRootPart")
+
+		if humanoid and rootPart then
+			-- Força o jogo a achar que você está a 16 (bula o anticheat de WalkSpeed)
+			humanoid.WalkSpeed = 16 
+			local moveDir = humanoid.MoveDirection
+
+			if moveDir.Magnitude > 0 then
+				local targetSpeed = settings.SpeedVal or 25
+				
+				-- Pega apenas a diferença (ex: se o slider tá em 25, pega só os 9 a mais)
+				local extraSpeed = math.max(0, targetSpeed - 16)
+				
+				-- Move o personagem de forma fluida usando o DeltaTime (dt) do jogo
+				rootPart.CFrame = rootPart.CFrame + (moveDir * extraSpeed * dt)
+			end
+		end
+	end)
+end)
+
 
 -- ==================== INFINITE ITEMS CORRIGIDO ====================
 local connectedTools = {}
