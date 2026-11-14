@@ -1581,13 +1581,24 @@ RunService.RenderStepped:Connect(function()
 		end
 	end)
 
-        -- Entity ESP Atualizado (Incluindo FigureRig/FigureSetup e MeshParts com texto "Figure")
+        -- Entity ESP Atualizado com Nomes Personalizados
     pcall(function()
         local char = LocalPlayer.Character
         local rootPart = char and char:FindFirstChild("HumanoidRootPart")
         
+        local customNames = {
+            RushMoving = "Rush",
+            AmbushMoving = "Ambush",
+            BackDoorRush = "Blitz",
+            BackDoorLookman = "Lookman",
+            SallyLingering = "Sally",
+            TellerRig = "Teller",
+            FigureRig = "Figure",
+            BashMoving = "Bash"
+        }
+
         for _, v in ipairs(workspace:GetChildren()) do
-            local isStandardEntity = v:IsA("Model") and (v.Name == "RushMoving" or v.Name == "AmbushMoving" or v.Name == "Eyes" or v.Name == "Halt" or v.Name == "SeekRig" or v.Name == "Glitch" or v.Name == "A60" or v.Name == "A90")
+            local isStandardEntity = v:IsA("Model") and (v.Name == "RushMoving" or v.Name == "AmbushMoving" or v.Name == "Eyes" or v.Name == "Halt" or v.Name == "SeekRig" or v.Name == "Glitch" or v.Name == "A60" or v.Name == "A90" or v.Name == "A120" or v.Name == "BashMoving" or v.Name == "Scribbles" or v.Name == "DronesStampede" or v.Name == "BackDoorRush" or v.Name == "BackDoorLookman" or v.Name == "SallyLingering" or v.Name == "TellerRig")
             local isFigure = v:IsA("Model") and (v.Name == "FigureRig" or v.Name == "FigureSetup" or v.Name:lower():find("figure"))
 
             if isStandardEntity or isFigure then
@@ -1605,7 +1616,7 @@ RunService.RenderStepped:Connect(function()
                             hl.Parent = v
                         end
 
-                        -- Destaca também todas as partes MeshParts específicas se for o Figure
+                        -- Destaca as partes MeshParts específicas se for o Figure
                         if isFigure then
                             for _, desc in ipairs(v:GetDescendants()) do
                                 if desc:IsA("MeshPart") and not desc:FindFirstChild("SubMeshHighlight") then
@@ -1645,7 +1656,7 @@ RunService.RenderStepped:Connect(function()
                         local lbl = bg:FindFirstChild("DistLabel")
                         if lbl then
                             local dist = rootPart and math.floor((rootPart.Position - part.Position).Magnitude) or 0
-                            local displayName = isFigure and "Figure" or v.Name
+                            local displayName = isFigure and "Figure" or (customNames[v.Name] or v.Name)
                             lbl.Text = displayName .. " [" .. dist .. "]"
                         end
                     else
@@ -1659,8 +1670,6 @@ RunService.RenderStepped:Connect(function()
             end
         end
     end)
-
-
 
 	-- 10. Bypass Screech, A90 & Eyes
 	pcall(function()
@@ -1678,19 +1687,34 @@ RunService.RenderStepped:Connect(function()
 		end
 	end)
 
-	-- 11. Notify Entities
+		-- 11. Notify Entities com Nomes Personalizados
 	if settings.NotifyEntities then
 		pcall(function()
+			local customNames = {
+				RushMoving = "Rush",
+				AmbushMoving = "Ambush",
+				BackDoorRush = "Blitz",
+				BackDoorLookman = "Lookman",
+				SallyLingering = "Sally",
+				TellerRig = "Teller",
+                FigureRig = "Figure",
+                BashMoving = "Bash"
+			}
+
 			for _, v in pairs(workspace:GetChildren()) do
-				if v:IsA("Model") and (v.Name == "RushMoving" or v.Name == "AmbushMoving" or v.Name == "Eyes" or v.Name == "Halt" or v.Name == "Figure" or v.Name == "SeekRig" or v.Name == "Glitch" or v.Name == "A60" or v.Name == "A90" or v.Name == "A120" or v.Name == "BashMoving" or v.Name == "Scribbles") then
+				local isStandardEntity = v:IsA("Model") and (v.Name == "RushMoving" or v.Name == "AmbushMoving" or v.Name == "Eyes" or v.Name == "Halt" or v.Name == "Figure" or v.Name == "FigureRig" or v.Name == "FigureSetup" or v.Name == "SeekRig" or v.Name == "Glitch" or v.Name == "A60" or v.Name == "A90" or v.Name == "A120" or v.Name == "BashMoving" or v.Name == "Scribbles" or v.Name == "DronesStampede" or v.Name == "BackDoorRush" or v.Name == "BackDoorLookman" or v.Name == "SallyLingering" or v.Name == "TellerRig")
+
+				if isStandardEntity then
 					if not notifiedEntities[v] then
 						notifiedEntities[v] = true
-						ShowNotification("Entity Spawned: " .. v.Name .. "!")
+						local displayName = customNames[v.Name] or (v.Name:lower():find("figure") and "Figure" or v.Name)
+						ShowNotification("Entity Spawned: " .. displayName .. "!")
 					end
 				end
 			end
 		end)
 	end
+
 
 	-- 12. Notify Items Corrigido (Baseado na estrutura exata do Item ESP)
 	if settings.NotifyItems then
