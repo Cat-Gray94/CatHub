@@ -820,7 +820,7 @@ end)
 AddToggle(SecEsp, "Entity ESP", "EntityESP", function(state)
 	CatHubSettings.EntityESP = state
 end)
-AddToggle(SecEsp, "Key ESP", "KeyESP", function(state)
+AddToggle(SecEsp, "Objective ESP", "KeyESP", function(state)
 	CatHubSettings.KeyESP = state
 end)
 AddToggle(SecEsp, "Item ESP", "ItemESP", function(state)
