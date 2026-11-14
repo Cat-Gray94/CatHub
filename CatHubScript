@@ -1182,12 +1182,6 @@ RunService.RenderStepped:Connect(function()
 	local humanoid = char:FindFirstChildOfClass("Humanoid")
 	local rootPart = char:FindFirstChild("HumanoidRootPart")
 
-	-- 1 Speed Boost integrado com o CatHubSettings
-	if CatHubSettings.SpeedEnabled and humanoid then
-		local speedVal = CatHubSettings.SpeedVal or 25
-		humanoid.WalkSpeed = Functions.GetCurrentSpeed() + speedVal
-	end
-
 	-- 1. Noclip
 	if settings.NoclipEnabled then
 		for _, part in pairs(char:GetDescendants()) do
@@ -1779,6 +1773,23 @@ RunService.RenderStepped:Connect(function()
                 end
             end
 		end)
+	end
+end)
+
+-- Sistema de Speed Boost Seguro (Fora do RenderStepped)
+task.spawn(function()
+	while task.wait(0.1) do
+		local settings = _G.CatHubSettings or CatHubSettings
+		if settings then
+			local char = LocalPlayer.Character
+			if char then
+				if settings.SpeedEnabled then
+					char:SetAttribute("SpeedBoost", settings.SpeedVal or 25)
+				else
+					char:SetAttribute("SpeedBoost", 0)
+				end
+			end
+		end
 	end
 end)
 
