@@ -20,7 +20,7 @@ local PathfindingService = game:GetService("PathfindingService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
--- Sistema de Carregamento e Salvamento Automático (Blindado contra erros de loadstring)
+-- Sistema de Carregamento e Salvamento Automático (Garantindo padrão false)
 local autoSaveFileName = "CatHub_AutoSave.json"
 _G.CatHubSettings = _G.CatHubSettings or {
 	SpeedEnabled = false,
@@ -322,10 +322,37 @@ tabs[1].Button.BackgroundColor3 = Color3.fromRGB(24, 24, 34)
 tabs[1].Button.TextColor3 = Color3.fromRGB(255, 255, 255)
 InfoPage.Visible = true
 
--- Função de Filtragem da SearchBox
+-- Função de Filtragem Avançada da SearchBox (Com troca automática de aba e isolamento)
+local originalTabStates = {}
 SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
 	local query = SearchBox.Text:lower()
 	if not tabs then return end
+
+	if query == "" then
+		-- Restaura todas as abas e seções ao apagar a pesquisa
+		for _, tabData in ipairs(tabs) do
+			tabData.Page.Visible = false
+			for _, section in ipairs(tabData.Page:GetChildren()) do
+				if section:IsA("Frame") then
+					section.Visible = true
+					local container = section:FindFirstChildOfClass("ScrollingFrame")
+					if container then
+						for _, item in ipairs(container:GetChildren()) do
+							if item:IsA("Frame") then item.Visible = true end
+						end
+					end
+				end
+			end
+		end
+		-- Volta para a primeira aba (Info) se necessário
+		tabs[1].Button.MouseButton1Click:Fire()
+		return
+	end
+
+	-- Procura em qual aba está o item pesquisado
+	local foundTab = nil
+	local targetSection = nil
+	local targetItem = nil
 
 	for _, tabData in ipairs(tabs) do
 		local page = tabData.Page
@@ -336,16 +363,47 @@ SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
 					for _, item in ipairs(container:GetChildren()) do
 						if item:IsA("Frame") then
 							local label = item:FindFirstChildOfClass("TextLabel")
-							if label then
-								local featureName = label.Text:lower()
-								if query == "" or featureName:find(query) then
-									item.Visible = true
-								else
-									item.Visible = false
-								end
+							if label and label.Text:lower():find(query) then
+								foundTab = tabData
+								targetSection = section
+								targetItem = item
+								break
 							end
 						end
 					end
+				end
+			end
+			if foundTab then break end
+		end
+		if foundTab then break end
+	end
+
+	-- Se encontrou, muda para a aba correta e oculta todo o resto, mostrando só o frame cinza da opção
+	if foundTab and targetSection and targetItem then
+		for _, tabData in ipairs(tabs) do
+			tabData.Button.BackgroundTransparency = 1
+			tabData.Button.TextColor3 = Color3.fromRGB(150, 150, 170)
+			tabData.Page.Visible = false
+		end
+		foundTab.Button.BackgroundTransparency = 0
+		foundTab.Button.BackgroundColor3 = Color3.fromRGB(24, 24, 34)
+		foundTab.Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+		foundTab.Page.Visible = true
+
+		for _, section in ipairs(foundTab.Page:GetChildren()) do
+			if section:IsA("Frame") then
+				if section == targetSection then
+					section.Visible = true
+					local container = section:FindFirstChildOfClass("ScrollingFrame")
+					if container then
+						for _, item in ipairs(container:GetChildren()) do
+							if item:IsA("Frame") then
+								item.Visible = (item == targetItem)
+							end
+						end
+					end
+				else
+					section.Visible = false
 				end
 			end
 		end
@@ -1109,16 +1167,26 @@ RunService.RenderStepped:Connect(function()
 	local humanoid = char:FindFirstChildOfClass("Humanoid")
 	local rootPart = char:FindFirstChild("HumanoidRootPart")
 
-	-- 1. Speed Boost
+		-- 1. Speed Boost Corrigido (Sem puxar o player para trás no Doors)
 	if humanoid then
 		if settings.SpeedEnabled then
-			humanoid.WalkSpeed = settings.SpeedVal or 25
+			local targetSpeed = settings.SpeedVal or 25
+			if humanoid.WalkSpeed ~= targetSpeed then
+				humanoid.WalkSpeed = targetSpeed
+			end
+			-- Evita conflito de estado de movimento forçando o vetor de velocidade se estiver andando
+			if rootPart and humanoid.MoveDirection.Magnitude > 0 then
+				local currentVelocity = rootPart.AssemblyLinearVelocity
+				local moveDir = humanoid.MoveDirection
+				rootPart.AssemblyLinearVelocity = Vector3.new(moveDir.X * targetSpeed, currentVelocity.Y, moveDir.Z * targetSpeed)
+			end
 		else
-			if humanoid.WalkSpeed == (settings.SpeedVal or 25) then
-				humanoid.WalkSpeed = 16 
+			if humanoid.WalkSpeed > 16 and humanoid.WalkSpeed <= 150 then
+				humanoid.WalkSpeed = 16
 			end
 		end
 	end
+
 
 	-- 2. Noclip
 	if settings.NoclipEnabled then
@@ -1348,7 +1416,7 @@ RunService.RenderStepped:Connect(function()
         end
     end)
 
-        -- 7. ESP Objective (Key e Moon Books da Sala 50 em Verde)
+            -- 7. ESP Objective (Key e Moon Books da Sala 50 em Verde)
     pcall(function()
         local currentRooms = workspace:FindFirstChild("CurrentRooms")
         if currentRooms then
