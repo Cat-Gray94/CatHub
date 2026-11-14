@@ -1190,6 +1190,15 @@ RunService.RenderStepped:Connect(function()
 	local humanoid = char:FindFirstChildOfClass("Humanoid")
 	local rootPart = char:FindFirstChild("HumanoidRootPart")
 
+	-- 1. Speed Boost integrado com o CatHubSettings (Com reset automático ao desligar)
+	if CatHubSettings.SpeedEnabled and humanoid then
+		local speedVal = CatHubSettings.SpeedVal or 25
+		humanoid.WalkSpeed = Functions.GetCurrentSpeed() + speedVal
+	elseif humanoid then
+		-- Reseta obrigatoriamente para a velocidade padrão do Doors (16) quando o toggle for desligado
+		humanoid.WalkSpeed = 16
+	end
+
 	-- 1. Noclip
 	if settings.NoclipEnabled then
 		for _, part in pairs(char:GetDescendants()) do
