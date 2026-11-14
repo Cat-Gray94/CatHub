@@ -1709,8 +1709,8 @@ RunService.RenderStepped:Connect(function()
 			local customNames = {
 				RushMoving = "Rush",
 				AmbushMoving = "Ambush",
-				BackDoorRush = "Blitz",
-				BackDoorLookman = "Lookman",
+				BackdoorRush = "Blitz",
+				BackdoorLookman = "Lookman",
 				SallyLingering = "Sally",
 				TellerRig = "Teller",
                 FigureRig = "Figure",
