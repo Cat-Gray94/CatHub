@@ -95,6 +95,7 @@ local CatHubGui = Instance.new("ScreenGui")
 CatHubGui.Name = "CatHubGui"
 CatHubGui.ResetOnSpawn = false
 CatHubGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+CatHubGui.IgnoreGuiInset = true
 
 pcall(function()
 	CatHubGui.Parent = CoreGui
@@ -822,16 +823,9 @@ local SecChar = CreateSection(GeneralPage, "Character")
 AddToggle(SecChar, "Enable Speed Boost", "SpeedEnabled", function(state)
 	CatHubSettings.SpeedEnabled = state
 end)
+
 AddSlider(SecChar, "Speed Boost", 5, 150, 25, "SpeedVal", function(val)
 	CatHubSettings.SpeedVal = val
-
-	-- No seu slider de velocidade (SpeedVal):
--- Certifique-se de que o :OnChanged ou a função de callback do slider atualize o remote:
-Options.SpeedVal:OnChanged(function(Value)
-	if RemotesFolder:FindFirstChild("Crouch") then
-		RemotesFolder.Crouch:FireServer(Value and true or Functions.IsCrouching(), true)
-		end
-	end)
 end)
 
 AddToggle(SecChar, "Fly", "FlyEnabled", function(state)
@@ -1155,34 +1149,6 @@ end)
 
 RefreshConfigList()
 
--- 1. Função de suporte para calcular a velocidade atual com base nos atributos do jogo
-local Functions = Functions or {}
-
--- Declaração correta e segura da função de velocidade
-Functions.GetCurrentSpeed = function()
-	local Speed = 15
-	if Character then
-		Speed += Character:GetAttribute("SpeedBoost") or 0
-		Speed += Character:GetAttribute("SpeedBoostBehind") or 0
-		Speed += Character:GetAttribute("SpeedBoostExtra") or 0
-	end
-	return Speed
-end
-
--- 2. Evento do Slider de Velocidade (dispara o remote de crouch igual ao Abyssal Hub)
-Options.SpeedBoostSlider:OnChanged(function(Value)
-	if RemotesFolder:FindFirstChild("Crouch") then
-		RemotesFolder.Crouch:FireServer(Value and true or Functions.IsCrouching(), true)
-	end
-end)
-
--- 3. Evento do Toggle de Speed Boost
-Toggles.SpeedBoostToggle:OnChanged(function(Value)
-	if Humanoid then
-		Humanoid.WalkSpeed = Functions.GetCurrentSpeed() + (Value and Options.SpeedBoostSlider.Value or 0)
-	end
-end)
-
 -- ==================== LOGICAS EM TEMPO REAL ====================
 
 local notifiedEntities = {}
@@ -1202,11 +1168,11 @@ RunService.RenderStepped:Connect(function()
 	local humanoid = char:FindFirstChildOfClass("Humanoid")
 	local rootPart = char:FindFirstChild("HumanoidRootPart")
 
-	-- 1 Speed boost dentro do seu loop principal (RenderStepped / MainHandler):
-		if CatHubSettings.SpeedEnabled and humanoid then
-			local speedVal = CatHubSettings.SpeedVal or 25
-			humanoid.WalkSpeed = Functions.GetCurrentSpeed() + speedVal
-		end
+	-- 1 Speed Boost integrado com o CatHubSettings
+	if CatHubSettings.SpeedEnabled and humanoid then
+		local speedVal = CatHubSettings.SpeedVal or 25
+		humanoid.WalkSpeed = Functions.GetCurrentSpeed() + speedVal
+	end
 
 	-- 1. Noclip
 	if settings.NoclipEnabled then
@@ -1801,6 +1767,20 @@ RunService.RenderStepped:Connect(function()
 		end)
 	end
 end)
+
+-- Função segura para calcular a velocidade atual baseada nos atributos do Doors
+local Functions = Functions or {}
+
+Functions.GetCurrentSpeed = function()
+	local Speed = 15
+	local char = LocalPlayer.Character
+	if char then
+		Speed += char:GetAttribute("SpeedBoost") or 0
+		Speed += char:GetAttribute("SpeedBoostBehind") or 0
+		Speed += char:GetAttribute("SpeedBoostExtra") or 0
+	end
+	return Speed
+end
 
 -- ==================== INFINITE ITEMS CORRIGIDO ====================
 local connectedTools = {}
