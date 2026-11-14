@@ -1149,6 +1149,20 @@ end)
 
 RefreshConfigList()
 
+-- Garante que a tabela Functions existe e calcula a velocidade baseada nos atributos do Doors
+local Functions = Functions or {}
+
+Functions.GetCurrentSpeed = function()
+	local Speed = 15
+	local char = LocalPlayer.Character
+	if char then
+		Speed += char:GetAttribute("SpeedBoost") or 0
+		Speed += char:GetAttribute("SpeedBoostBehind") or 0
+		Speed += char:GetAttribute("SpeedBoostExtra") or 0
+	end
+	return Speed
+end
+
 -- ==================== LOGICAS EM TEMPO REAL ====================
 
 local notifiedEntities = {}
@@ -1767,20 +1781,6 @@ RunService.RenderStepped:Connect(function()
 		end)
 	end
 end)
-
--- Função segura para calcular a velocidade atual baseada nos atributos do Doors
-local Functions = Functions or {}
-
-Functions.GetCurrentSpeed = function()
-	local Speed = 15
-	local char = LocalPlayer.Character
-	if char then
-		Speed += char:GetAttribute("SpeedBoost") or 0
-		Speed += char:GetAttribute("SpeedBoostBehind") or 0
-		Speed += char:GetAttribute("SpeedBoostExtra") or 0
-	end
-	return Speed
-end
 
 -- ==================== INFINITE ITEMS CORRIGIDO ====================
 local connectedTools = {}
