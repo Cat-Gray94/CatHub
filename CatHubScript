@@ -1167,26 +1167,18 @@ RunService.RenderStepped:Connect(function()
 	local humanoid = char:FindFirstChildOfClass("Humanoid")
 	local rootPart = char:FindFirstChild("HumanoidRootPart")
 
-		-- 1. Speed Boost Corrigido (Sem puxar o player para trás no Doors)
-	if humanoid then
+			-- 1. Speed Boost com CFrame Bypass (Bula o Anticheat do Doors sem puxar para trás)
+	if humanoid and rootPart then
 		if settings.SpeedEnabled then
-			local targetSpeed = settings.SpeedVal or 25
-			if humanoid.WalkSpeed ~= targetSpeed then
-				humanoid.WalkSpeed = targetSpeed
-			end
-			-- Evita conflito de estado de movimento forçando o vetor de velocidade se estiver andando
-			if rootPart and humanoid.MoveDirection.Magnitude > 0 then
-				local currentVelocity = rootPart.AssemblyLinearVelocity
-				local moveDir = humanoid.MoveDirection
-				rootPart.AssemblyLinearVelocity = Vector3.new(moveDir.X * targetSpeed, currentVelocity.Y, moveDir.Z * targetSpeed)
-			end
-		else
-			if humanoid.WalkSpeed > 16 and humanoid.WalkSpeed <= 150 then
-				humanoid.WalkSpeed = 16
+			humanoid.WalkSpeed = 16 -- O servidor acha que você está andando a 16 normal
+			if humanoid.MoveDirection.Magnitude > 0 then
+				local speedVal = settings.SpeedVal or 25
+				-- Desloca a CFrame suavemente na direção do movimento sem acionar o anticheat de física
+				local moveStep = humanoid.MoveDirection * ((speedVal - 16) * 0.022)
+				rootPart.CFrame = rootPart.CFrame + moveStep
 			end
 		end
 	end
-
 
 	-- 2. Noclip
 	if settings.NoclipEnabled then
