@@ -1408,7 +1408,7 @@ RunService.RenderStepped:Connect(function()
         end
     end)
 
-            -- 7. ESP Objective (Key e Moon Books da Sala 50 em Verde)
+        -- 7. ESP Objective (Key e Moon Books da Sala 50 na estrutura exata)
     pcall(function()
         local currentRooms = workspace:FindFirstChild("CurrentRooms")
         if currentRooms then
@@ -1460,58 +1460,70 @@ RunService.RenderStepped:Connect(function()
                     end
                 end
 
-                -- B. Moon Book ESP (Sala 50 / Biblioteca) - Apenas MeshParts e ignora coletados
+                -- B. Moon Book ESP na Sala 50 (Assets -> Bookshelves1 -> Modular_Bookshelf -> LiveHintBook)
                 if room.Name == "50" then
-                    local bookshelves = assets:FindFirstChild("Bookshelves")
-                    if bookshelves then
-                        for _, shelf in ipairs(bookshelves:GetChildren()) do
-                            if shelf.Name == "Modular_Bookshelf" then
-                                for _, book in ipairs(shelf:GetDescendants()) do
-                                    if book.Name == "LiveHintBook" then
-                                        -- Verifica se o livro ainda existe e não foi coletado (se foi coletado, some ou perde o ProximityPrompt/Parent adequado)
-                                        local prompt = book:FindFirstChildOfClass("ProximityPrompt")
-                                        local targetMesh = book:FindFirstChildWhichIsA("MeshPart") or (book:IsA("MeshPart") and book)
-
-                                        if targetMesh and prompt and prompt.Enabled then
-                                            if settings.KeyESP then -- Usa a mesma config/toggle do Objective ESP
-                                                if not book:FindFirstChild("CatBookHighlight") then
+                    local bookshelves1 = assets:FindFirstChild("Bookshelves1")
+                    if bookshelves1 then
+                        for _, shelf in ipairs(bookshelves1:GetDescendants()) do
+                            if shelf.Name == "LiveHintBook" and shelf:IsA("Model") then
+                                local prompt = shelf:FindFirstChildOfClass("ProximityPrompt")
+                                
+                                -- Se o livro existe e ainda tem o prompt ativo (não foi coletado)
+                                if prompt and prompt.Enabled then
+                                    if settings.KeyESP then
+                                        -- Aplica highlight verde em cada MeshPart específica do livro
+                                        local targetParts = {"Bindings", "BookBase", "Moon", "Neon", "Pages"}
+                                        for _, pName in ipairs(targetParts) do
+                                            local meshPart = shelf:FindFirstChild(pName)
+                                            if meshPart and meshPart:IsA("MeshPart") then
+                                                if not meshPart:FindFirstChild("CatBookHighlight") then
                                                     local hl = Instance.new("Highlight")
                                                     hl.Name = "CatBookHighlight"
                                                     hl.FillColor = Color3.fromRGB(0, 255, 100)
                                                     hl.FillTransparency = 0.5
                                                     hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+                                                    hl.OutlineTransparency = 1
                                                     hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-                                                    hl.Adornee = targetMesh
-                                                    hl.Parent = book
+                                                    hl.Adornee = meshPart
+                                                    hl.Parent = meshPart
                                                 end
-                                                if not book:FindFirstChild("CatBookESP") then
-                                                    local bg = Instance.new("BillboardGui")
-                                                    bg.Name = "CatBookESP"
-                                                    bg.Size = UDim2.new(0, 100, 0, 40)
-                                                    bg.AlwaysOnTop = true
-                                                    bg.Adornee = targetMesh
-                                                    bg.Parent = book
-
-                                                    local lbl = Instance.new("TextLabel")
-                                                    lbl.Size = UDim2.new(1, 0, 1, 0)
-                                                    lbl.BackgroundTransparency = 1
-                                                    lbl.Text = "Moon book"
-                                                    lbl.TextColor3 = Color3.fromRGB(0, 255, 100)
-                                                    lbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-                                                    lbl.TextStrokeTransparency = 0
-                                                    lbl.Font = Enum.Font.Code
-                                                    lbl.TextSize = 13
-                                                    lbl.Parent = bg
-                                                end
-                                            else
-                                                if book:FindFirstChild("CatBookHighlight") then book.CatBookHighlight:Destroy() end
-                                                if book:FindFirstChild("CatBookESP") then book.CatBookESP:Destroy() end
                                             end
-                                        else
-                                            -- Se foi coletado (prompt some ou desativa), limpa o ESP na hora
-                                            if book:FindFirstChild("CatBookHighlight") then book.CatBookHighlight:Destroy() end
-                                            if book:FindFirstChild("CatBookESP") then book.CatBookESP:Destroy() end
                                         end
+
+                                        -- Billboard com o texto "Moon book"
+                                        local centerPart = shelf.PrimaryPart or shelf:FindFirstChild("BookBase") or shelf:FindFirstChildWhichIsA("MeshPart")
+                                        if centerPart and not shelf:FindFirstChild("CatBookESP") then
+                                            local bg = Instance.new("BillboardGui")
+                                            bg.Name = "CatBookESP"
+                                            bg.Size = UDim2.new(0, 100, 0, 40)
+                                            bg.AlwaysOnTop = true
+                                            bg.Adornee = centerPart
+                                            bg.Parent = shelf
+
+                                            local lbl = Instance.new("TextLabel")
+                                            lbl.Size = UDim2.new(1, 0, 1, 0)
+                                            lbl.BackgroundTransparency = 1
+                                            lbl.Text = "Moon book"
+                                            lbl.TextColor3 = Color3.fromRGB(0, 255, 100)
+                                            lbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                                            lbl.TextStrokeTransparency = 0
+                                            lbl.Font = Enum.Font.Code
+                                            lbl.TextSize = 13
+                                            lbl.Parent = bg
+                                        end
+                                    else
+                                        if shelf:FindFirstChild("CatBookESP") then shelf.CatBookESP:Destroy() end
+                                        for _, pName in ipairs({"Bindings", "BookBase", "Moon", "Neon", "Pages"}) do
+                                            local mp = shelf:FindFirstChild(pName)
+                                            if mp and mp:FindFirstChild("CatBookHighlight") then mp.CatBookHighlight:Destroy() end
+                                        end
+                                    end
+                                else
+                                    -- Se foi coletado (prompt sumiu ou desativou), limpa o ESP imediatamente
+                                    if shelf:FindFirstChild("CatBookESP") then shelf.CatBookESP:Destroy() end
+                                    for _, pName in ipairs({"Bindings", "BookBase", "Moon", "Neon", "Pages"}) do
+                                        local mp = shelf:FindFirstChild(pName)
+                                        if mp and mp:FindFirstChild("CatBookHighlight") then mp.CatBookHighlight:Destroy() end
                                     end
                                 end
                             end
@@ -1581,7 +1593,7 @@ RunService.RenderStepped:Connect(function()
 		end
 	end)
 
-        -- Entity ESP Atualizado com Nomes Personalizados
+        -- Entity ESP Atualizado (FigureRig com MeshParts em vermelho e texto "Figure")
     pcall(function()
         local char = LocalPlayer.Character
         local rootPart = char and char:FindFirstChild("HumanoidRootPart")
@@ -1589,46 +1601,48 @@ RunService.RenderStepped:Connect(function()
         local customNames = {
             RushMoving = "Rush",
             AmbushMoving = "Ambush",
-            BackDoorRush = "Blitz",
-            BackDoorLookman = "Lookman",
+            BackdoorRush = "Blitz",
+            BackdoorLookman = "Lookman",
             SallyLingering = "Sally",
             TellerRig = "Teller",
-            FigureRig = "Figure",
+            FigureRig = "Figure"
             BashMoving = "Bash"
         }
 
         for _, v in ipairs(workspace:GetChildren()) do
-            local isStandardEntity = v:IsA("Model") and (v.Name == "RushMoving" or v.Name == "AmbushMoving" or v.Name == "Eyes" or v.Name == "Halt" or v.Name == "SeekRig" or v.Name == "Glitch" or v.Name == "A60" or v.Name == "A90" or v.Name == "A120" or v.Name == "BashMoving" or v.Name == "Scribbles" or v.Name == "DronesStampede" or v.Name == "BackDoorRush" or v.Name == "BackDoorLookman" or v.Name == "SallyLingering" or v.Name == "TellerRig")
+            local isStandardEntity = v:IsA("Model") and (v.Name == "RushMoving" or v.Name == "AmbushMoving" or v.Name == "Eyes" or v.Name == "Halt" or v.Name == "A60" or v.Name == "A120" or v.Name == "BashMoving" or v.Name == "Scribbles" or v.Name == "DronesStampede" or v.Name == "BackdoorRush" or v.Name == "BackdoorLookman" or v.Name == "SallyLingering" or v.Name == "TellerRig")
             local isFigure = v:IsA("Model") and (v.Name == "FigureRig" or v.Name == "FigureSetup" or v.Name:lower():find("figure"))
 
             if isStandardEntity or isFigure then
                 local part = v.PrimaryPart or v:FindFirstChildWhichIsA("BasePart")
                 if part then
                     if settings.EntityESP then
-                        if not v:FindFirstChild("CatEntityHighlight") then
-                            local hl = Instance.new("Highlight")
-                            hl.Name = "CatEntityHighlight"
-                            hl.FillColor = Color3.fromRGB(255, 50, 50)
-                            hl.FillTransparency = 0.4
-                            hl.OutlineColor = Color3.fromRGB(255, 255, 255)
-                            hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-                            hl.Adornee = v
-                            hl.Parent = v
-                        end
-
-                        -- Destaca as partes MeshParts específicas se for o Figure
+                        -- Se for o Figure, pinta TODOS os MeshParts em vermelho
                         if isFigure then
                             for _, desc in ipairs(v:GetDescendants()) do
-                                if desc:IsA("MeshPart") and not desc:FindFirstChild("SubMeshHighlight") then
+                                if desc:IsA("MeshPart") and not desc:FindFirstChild("CatFigureHighlight") then
                                     local subHl = Instance.new("Highlight")
-                                    subHl.Name = "SubMeshHighlight"
+                                    subHl.Name = "CatFigureHighlight"
                                     subHl.FillColor = Color3.fromRGB(255, 50, 50)
-                                    subHl.FillTransparency = 0.5
-                                    subHl.OutlineTransparency = 1
+                                    subHl.FillTransparency = 0.4
+                                    subHl.OutlineColor = Color3.fromRGB(255, 255, 255)
+                                    subHl.OutlineTransparency = 0
                                     subHl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
                                     subHl.Adornee = desc
                                     subHl.Parent = desc
                                 end
+                            end
+                        else
+                            -- Entidades normais
+                            if not v:FindFirstChild("CatEntityHighlight") then
+                                local hl = Instance.new("Highlight")
+                                hl.Name = "CatEntityHighlight"
+                                hl.FillColor = Color3.fromRGB(255, 50, 50)
+                                hl.FillTransparency = 0.4
+                                hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+                                hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                                hl.Adornee = v
+                                hl.Parent = v
                             end
                         end
                         
@@ -1660,16 +1674,18 @@ RunService.RenderStepped:Connect(function()
                             lbl.Text = displayName .. " [" .. dist .. "]"
                         end
                     else
+                        -- Limpeza ao desativar
                         if v:FindFirstChild("CatEntityHighlight") then v.CatEntityHighlight:Destroy() end
-                        if v:FindFirstChild("CatEntityESP") then v.CatEntityESP:Destroy() end
+                        if v:FindFirstChild("CatEntityESP") then v:FindFirstChild("CatEntityESP"):Destroy() end
                         for _, desc in ipairs(v:GetDescendants()) do
-                            if desc.Name == "SubMeshHighlight" then desc:Destroy() end
+                            if desc.Name == "CatFigureHighlight" then desc:Destroy() end
                         end
                     end
                 end
             end
         end
     end)
+
 
 	-- 10. Bypass Screech, A90 & Eyes
 	pcall(function()
@@ -1702,7 +1718,7 @@ RunService.RenderStepped:Connect(function()
 			}
 
 			for _, v in pairs(workspace:GetChildren()) do
-				local isStandardEntity = v:IsA("Model") and (v.Name == "RushMoving" or v.Name == "AmbushMoving" or v.Name == "Eyes" or v.Name == "Halt" or v.Name == "Figure" or v.Name == "FigureRig" or v.Name == "FigureSetup" or v.Name == "SeekRig" or v.Name == "Glitch" or v.Name == "A60" or v.Name == "A90" or v.Name == "A120" or v.Name == "BashMoving" or v.Name == "Scribbles" or v.Name == "DronesStampede" or v.Name == "BackDoorRush" or v.Name == "BackDoorLookman" or v.Name == "SallyLingering" or v.Name == "TellerRig")
+				local isStandardEntity = v:IsA("Model") and (v.Name == "RushMoving" or v.Name == "AmbushMoving" or v.Name == "Eyes" or v.Name == "Halt" or v.Name == "FigureRig" or v.Name == "Glitch" or v.Name == "A60" or v.Name == "A90" or v.Name == "A120" or v.Name == "BashMoving" or v.Name == "Scribbles" or v.Name == "DronesStampede" or v.Name == "BackdoorRush" or v.Name == "BackdoorLookman" or v.Name == "SallyLingering" or v.Name == "TellerRig")
 
 				if isStandardEntity then
 					if not notifiedEntities[v] then
