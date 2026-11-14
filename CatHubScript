@@ -19,6 +19,8 @@ local LogService = game:GetService("LogService")
 local PathfindingService = game:GetService("PathfindingService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RemotesFolder = ReplicatedStorage:FindFirstChild("RemotesFolder") or ReplicatedStorage:FindFirstChild("Remotes")
 
 -- Sistema de Carregamento e Salvamento Automático (Garantindo padrão false)
 local autoSaveFileName = "CatHub_AutoSave.json"
@@ -825,6 +827,13 @@ end)
 
 AddSlider(SecChar, "Speed Boost", 5, 150, 25, "SpeedVal", function(val)
 	CatHubSettings.SpeedVal = val
+	
+	-- Truque do Abyssal Hub: Atualiza o estado no servidor para resetar o anti-cheat
+	pcall(function()
+		if RemotesFolder and RemotesFolder:FindFirstChild("Crouch") then
+			RemotesFolder.Crouch:FireServer(false, true)
+		end
+	end)
 end)
 
 AddToggle(SecChar, "Fly", "FlyEnabled", function(state)
@@ -1775,19 +1784,20 @@ RunService.RenderStepped:Connect(function()
 	end
 end)
 
--- Sistema de Speed Boost Seguro (Fora do RenderStepped)
 task.spawn(function()
-	while task.wait(0.1) do
+	while task.wait(0.2) do
 		local settings = _G.CatHubSettings or CatHubSettings
-		if settings then
-			local char = LocalPlayer.Character
-			if char then
-				if settings.SpeedEnabled then
+		if settings and settings.SpeedEnabled then
+			pcall(function()
+				local char = LocalPlayer.Character
+				if char then
+					-- Mantém o atributo seguro e dispara o remote para atualizar o servidor
 					char:SetAttribute("SpeedBoost", settings.SpeedVal or 25)
-				else
-					char:SetAttribute("SpeedBoost", 0)
+					if RemotesFolder and RemotesFolder:FindFirstChild("Crouch") then
+						RemotesFolder.Crouch:FireServer(false, true)
+					end
 				end
-			end
+			end)
 		end
 	end
 end)
