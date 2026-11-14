@@ -1759,37 +1759,30 @@ RunService.RenderStepped:Connect(function()
             end
 		end)
 	end
-end)
 
--- ==================== SPEED BOOST (INSPIRADO NO ABYSSAL HUB) ====================
-local RunService = game:GetService("RunService")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-
-RunService.Heartbeat:Connect(function(dt)
-	pcall(function()
-		local settings = _G.CatHubSettings or CatHubSettings
-		if not settings or not settings.SpeedEnabled then return end
-
-		local char = LocalPlayer.Character
-		local humanoid = char and char:FindFirstChildOfClass("Humanoid")
-		local rootPart = char and char:FindFirstChild("HumanoidRootPart")
-
-		if humanoid and rootPart then
-			-- Mantém o WalkSpeed base em 16 para enganar o anticheat do servidor do Doors
-			humanoid.WalkSpeed = 16 
-			local moveDir = humanoid.MoveDirection
-
-			if moveDir.Magnitude > 0 then
-				local targetSpeed = settings.SpeedVal or 25
-				-- Calcula apenas o excedente da velocidade de forma segura por frame (dt)
-				local extraSpeed = math.max(0, targetSpeed - 16)
-				
-				-- Aplica o avanço via CFrame de maneira suave e sincronizada
-				rootPart.CFrame = rootPart.CFrame + (moveDir * extraSpeed * dt)
+		-- Dentro do RenderStepped principal:
+		if Toggles.SpeedBoostToggle.Value and Character then
+			Character:SetAttribute("SpeedBoost", Options.SpeedBoostSlider.Value)
+		else
+			if Character and Character:GetAttribute("SpeedBoost") ~= 0 then
+				Character:SetAttribute("SpeedBoost", 0)
 			end
 		end
-	end)
+
+end)
+
+-- 1. Controle do Toggle de Speed Boost
+Toggles.SpeedBoostToggle:OnChanged(function(Value)
+	if Character then
+		Character:SetAttribute("SpeedBoost", Value and Options.SpeedBoostSlider.Value or 0)
+	end
+end)
+
+-- 2. Controle ao mexer no Slider de Velocidade
+Options.SpeedBoostSlider:OnChanged(function(Value)
+	if Toggles.SpeedBoostToggle.Value and Character then
+		Character:SetAttribute("SpeedBoost", Value)
+	end
 end)
 
 
