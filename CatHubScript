@@ -1760,28 +1760,35 @@ RunService.RenderStepped:Connect(function()
 		end)
 	end
 
-		-- Dentro do RenderStepped principal:
-		if Toggles.SpeedBoostToggle.Value and Character then
-			Character:SetAttribute("SpeedBoost", Options.SpeedBoostSlider.Value)
-		else
-			if Character and Character:GetAttribute("SpeedBoost") ~= 0 then
-				Character:SetAttribute("SpeedBoost", 0)
-			end
+		-- Dentro do seu loop principal (RenderStepped):
+		if Toggles.SpeedBoostToggle.Value and Humanoid then
+			Humanoid.WalkSpeed = Functions.GetCurrentSpeed() + Options.SpeedBoostSlider.Value
 		end
 
 end)
 
--- 1. Controle do Toggle de Speed Boost
-Toggles.SpeedBoostToggle:OnChanged(function(Value)
+-- 1. Função de suporte para calcular a velocidade atual com base nos atributos do jogo
+Functions.GetCurrentSpeed = function()
+	local Speed = 15
 	if Character then
-		Character:SetAttribute("SpeedBoost", Value and Options.SpeedBoostSlider.Value or 0)
+		Speed += Character:GetAttribute("SpeedBoost") or 0
+		Speed += Character:GetAttribute("SpeedBoostBehind") or 0
+		Speed += Character:GetAttribute("SpeedBoostExtra") or 0
+	end
+	return Speed
+end
+
+-- 2. Evento do Slider de Velocidade (dispara o remote de crouch igual ao Abyssal Hub)
+Options.SpeedBoostSlider:OnChanged(function(Value)
+	if RemotesFolder:FindFirstChild("Crouch") then
+		RemotesFolder.Crouch:FireServer(Value and true or Functions.IsCrouching(), true)
 	end
 end)
 
--- 2. Controle ao mexer no Slider de Velocidade
-Options.SpeedBoostSlider:OnChanged(function(Value)
-	if Toggles.SpeedBoostToggle.Value and Character then
-		Character:SetAttribute("SpeedBoost", Value)
+-- 3. Evento do Toggle de Speed Boost
+Toggles.SpeedBoostToggle:OnChanged(function(Value)
+	if Humanoid then
+		Humanoid.WalkSpeed = Functions.GetCurrentSpeed() + (Value and Options.SpeedBoostSlider.Value or 0)
 	end
 end)
 
