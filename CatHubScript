@@ -44,7 +44,9 @@ _G.CatHubSettings = _G.CatHubSettings or {
 	InfiniteItems = false,
 	AutoHotel = false,
 	LeverESP = false,
-	ClosetESP = false
+	ClosetESP = false,
+    JumpEnabled = false,
+	SlideEnabled = false
 }
 
 pcall(function()
@@ -845,6 +847,14 @@ end)
 
 AddToggle(SecChar, "Noclip", "NoclipEnabled", function(state)
 	CatHubSettings.NoclipEnabled = state
+end)
+
+AddToggle(SecChar, "Enable Jump", "JumpEnabled", function(state)
+	CatHubSettings.JumpEnabled = state
+end)
+
+AddToggle(SecChar, "Enable Sliding", "SlideEnabled", function(state)
+	CatHubSettings.SlideEnabled = state
 end)
 
 local SecAutomation = CreateSection(GeneralPage, "Automation")
@@ -1802,6 +1812,24 @@ RunService.RenderStepped:Connect(function()
             end
 		end)
 	end
+
+    -- 13 Enable Jump
+	if settings.JumpEnabled then
+		char:SetAttribute("CanJump", true)
+		if humanoid then
+			humanoid.JumpPower = 50 -- Garante força de pulo caso o jogo zere
+		end
+	else
+		char:SetAttribute("CanJump", false)
+	end
+
+	-- Enable Sliding
+	if settings.SlideEnabled then
+		char:SetAttribute("CanSlide", true)
+	else
+		char:SetAttribute("CanSlide", false)
+	end
+
 end)
 
 task.spawn(function()
