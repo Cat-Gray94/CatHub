@@ -35,7 +35,6 @@ _G.CatHubSettings = _G.CatHubSettings or {
 	LightEnabled = false,
 	BypassScreech = false,
 	BypassA90 = false,
-	BypassEyes = false,
 	AutoInteract = false,
 	EntityESP = false,
 	KeyESP = false,
@@ -47,7 +46,10 @@ _G.CatHubSettings = _G.CatHubSettings or {
 	ClosetESP = false,
     JumpEnabled = false,
 	SlideEnabled = false,
-	AutoBreakerBox = false
+	AutoBreakerBox = false,
+	BypassEyes = false,
+	PositionSpoof = false,
+	CrouchSpoof = false
 
 }
 
@@ -893,7 +895,36 @@ local SecItems = CreateSection(ExploitsPage, "Items")
 AddToggle(SecItems, "Infinite Items", "InfiniteItems", function(state)
 	CatHubSettings.InfiniteItems = state
 end)
+local SecManipulation = CreateSection(Exploits, "Manipulations")
+AddToggle(SecManipulation, "Position Spoof", "PositionSpoof", function(state)
+	CatHubSettings.PositionSpoof = state
+	pcall(function()
+		local char = LocalPlayer.Character
+		local rootPart = char and char:FindFirstChild("HumanoidRootPart")
+		local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+		if rootPart and humanoid then
+			if state then
+				rootPart.CFrame = rootPart.CFrame * CFrame.new(0, -2.346, 0)
+				humanoid.HipHeight = 0.05
+				if RemotesFolder and RemotesFolder:FindFirstChild("Crouch") then
+					RemotesFolder.Crouch:FireServer(true, true)
+				end
+			else
+				rootPart.CFrame = rootPart.CFrame * CFrame.new(0, 2.346, 0)
+				humanoid.HipHeight = 2.396
+			end
+		end
+	end)
+end)
 
+AddToggle(SecManipulation, "Crouch Spoof", "CrouchSpoof", function(state)
+	CatHubSettings.CrouchSpoof = state
+	pcall(function()
+		if RemotesFolder and RemotesFolder:FindFirstChild("Crouch") then
+			RemotesFolder.Crouch:FireServer(state and true or false, true)
+		end
+	end)
+end)
 
 -- ==================== CONTEÚDO: ABA VISUALS ====================
 local SecEsp = CreateSection(VisualsPage, "ESP & Vision")
@@ -1847,9 +1878,14 @@ end)
 			local a90 = LocalPlayer.PlayerGui:FindFirstChild("A90") or workspace:FindFirstChild("A90")
 			if a90 then a90:Destroy() end
 		end
+		-- Bypass Eyes Real (Envia o pacote de olhar para baixo/longe via MotorReplication)
+	pcall(function()
 		if settings.BypassEyes then
 			local eyes = workspace:FindFirstChild("Eyes") or workspace:FindFirstChild("EyesMoving")
-			if eyes then eyes:Destroy() end
+			if eyes and RemotesFolder and RemotesFolder:FindFirstChild("MotorReplication") then
+				-- Verifica se o player está olhando para ele ou se a entidade está ativa
+				RemotesFolder.MotorReplication:FireServer(-650)
+			end
 		end
 	end)
 
@@ -1925,6 +1961,13 @@ end)
 	else
 		char:SetAttribute("CanSlide", false)
 	end
+
+	-- Position & Crouch Spoof Enforcer
+	pcall(function()
+		if (settings.CrouchSpoof or settings.PositionSpoof) and RemotesFolder and RemotesFolder:FindFirstChild("Crouch") then
+			RemotesFolder.Crouch:FireServer(true, true)
+		end
+	end)
 
 end)
 
