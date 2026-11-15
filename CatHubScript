@@ -2157,11 +2157,11 @@ local MainFrame = CatHubGui:FindFirstChild("MainFrame")
 if MainFrame then
 	local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 	if isMobile then
-		MainFrame.Size = UDim2.new(0, 380, 0, 240)
+		-- Tamanho corrigido e mais largo para o celular não cortar os textos nem a barra de pesquisa[span_1](start_span)[span_1](end_span)
+		MainFrame.Size = UDim2.new(0, 500, 0, 290) 
 	else
-		MainFrame.Size = UDim2.new(0, 550, 0, 320)
+		MainFrame.Size = UDim2.new(0, 550, 0, 320) -- Tamanho confortável para PC
 	end
-	-- ADICIONE ESTA LINHA AQUI:
 	MainEnabledSize = MainFrame.Size 
 end
 
