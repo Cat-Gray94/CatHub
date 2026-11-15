@@ -353,7 +353,15 @@ SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
 			end
 		end
 		-- Volta para a primeira aba (Info) se necessário
-		tabs[1].Button.MouseButton1Click:Fire()
+		for _, tabData in ipairs(tabs) do
+			tabData.Button.BackgroundTransparency = 1
+			tabData.Button.TextColor3 = Color3.fromRGB(150, 150, 170)
+			tabData.Page.Visible = false
+		end
+		tabs[1].Button.BackgroundTransparency = 0
+		tabs[1].Button.BackgroundColor3 = Color3.fromRGB(24, 24, 34)
+		tabs[1].Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+		tabs[1].Page.Visible = true
 		return
 	end
 
@@ -895,8 +903,8 @@ local SecItems = CreateSection(ExploitsPage, "Items")
 AddToggle(SecItems, "Infinite Items", "InfiniteItems", function(state)
 	CatHubSettings.InfiniteItems = state
 end)
-local SecManipulation = CreateSection(Exploits, "Manipulations")
-AddToggle(SecManipulation, "Position Spoof", "PositionSpoof", function(state)
+local SecManipulations = CreateSection(ExploitsPage, "Manipulations")
+AddToggle(SecManipulations, "Position Spoof", "PositionSpoof", function(state)
 	CatHubSettings.PositionSpoof = state
 	pcall(function()
 		local char = LocalPlayer.Character
@@ -917,7 +925,7 @@ AddToggle(SecManipulation, "Position Spoof", "PositionSpoof", function(state)
 	end)
 end)
 
-AddToggle(SecManipulation, "Crouch Spoof", "CrouchSpoof", function(state)
+AddToggle(SecManipulations, "Crouch Spoof", "CrouchSpoof", function(state)
 	CatHubSettings.CrouchSpoof = state
 	pcall(function()
 		if RemotesFolder and RemotesFolder:FindFirstChild("Crouch") then
