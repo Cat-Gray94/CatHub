@@ -864,10 +864,9 @@ AddToggle(SecAutomation, "Auto Interact", "AutoInteract", function(state)
 	CatHubSettings.AutoInteract = state
 end)
 
-AddToggle(SecExploits, "Auto Breaker Box", "Automation", function(state)
+AddToggle(SecAutomation, "Auto Breaker Box", "Automation", function(state)
 	CatHubSettings.AutoBreakerBox = state
 end)
-
 
 -- ==================== CONTEÚDO: ABA EXPLOITS ====================
 local SecBypass = CreateSection(ExploitsPage, "Bypasses")
@@ -2079,8 +2078,6 @@ local isOpen = false
 
 local function ToggleGuiAnimation()
 	isOpen = not isOpen
-	
-	-- Define o tamanho ideal baseado se é celular ou PC (pegando o tamanho atual definido na inicialização)
 	local targetSize = MainEnabledSize or MainFrame.Size 
 	
 	if isOpen then
@@ -2089,11 +2086,11 @@ local function ToggleGuiAnimation()
 		MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
 
 		MainFrame:TweenSizeAndPosition(
-    		targetSize, -- Usa o tamanho responsivo correto do dispositivo
+    		targetSize, 
     		UDim2.new(0.5, 0, 0.5, 0), 
     		Enum.EasingDirection.Out, 
     		Enum.EasingStyle.Back, 
-    5.35, 
+    		0.35, -- Corrigido de 5.35 para 0.35
     		true
 		)
 	else
@@ -2156,14 +2153,16 @@ UserInputService.InputEnded:Connect(function(input)
 	end
 end)
 
-local MainFrame = CatHubGui:FindFirstChild("MainFrame") -- Já existe no seu script
+local MainFrame = CatHubGui:FindFirstChild("MainFrame")
 if MainFrame then
 	local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 	if isMobile then
-		MainFrame.Size = UDim2.new(0, 380, 0, 240) -- Tamanho compacto ideal para celular
+		MainFrame.Size = UDim2.new(0, 380, 0, 240)
 	else
-		MainFrame.Size = UDim2.new(0, 550, 0, 320) -- Tamanho confortável ideal para PC
+		MainFrame.Size = UDim2.new(0, 550, 0, 320)
 	end
+	-- ADICIONE ESTA LINHA AQUI:
+	MainEnabledSize = MainFrame.Size 
 end
 
 -- ==================== JANELA DE CONFIRMAÇÃO KILL HUB ====================
