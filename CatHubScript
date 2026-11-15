@@ -1190,14 +1190,25 @@ RunService.RenderStepped:Connect(function()
 	local humanoid = char:FindFirstChildOfClass("Humanoid")
 	local rootPart = char:FindFirstChild("HumanoidRootPart")
 
-	-- 1. Speed Boost integrado com o CatHubSettings (Com reset automático ao desligar)
+	-- 1 Speed Boost Inteligente para a Sala 50 / Furtividade
 	if CatHubSettings.SpeedEnabled and humanoid then
 		local speedVal = CatHubSettings.SpeedVal or 25
-		humanoid.WalkSpeed = Functions.GetCurrentSpeed() + speedVal
+		local currentRoom = workspace:FindFirstChild("LatestRoom") and workspace.CurrentRoom or nil
+		
+		-- Verifica se estamos na Sala 50 (Library) ou se o jogador está agachado (Crouching)
+		local isLibrary = workspace:GetAttribute("LatestRoom") == 50 or (workspace:FindFirstChild("CurrentRooms") and workspace.CurrentRooms:FindFirstChild("50"))
+		local isCrouching = char:GetAttribute("Crouching") == true
+
+		if isLibrary and isCrouching then
+			-- Na Sala 50 agachado: Desliga temporariamente o bônus para o Figure não te ouvir
+			humanoid.WalkSpeed = 16
+		else
+			humanoid.WalkSpeed = Functions.GetCurrentSpeed() + speedVal
+		end
 	elseif humanoid then
-		-- Reseta obrigatoriamente para a velocidade padrão do Doors (16) quando o toggle for desligado
 		humanoid.WalkSpeed = 16
 	end
+
 
 	-- 1. Noclip
 	if settings.NoclipEnabled then
