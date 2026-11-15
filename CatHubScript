@@ -46,7 +46,9 @@ _G.CatHubSettings = _G.CatHubSettings or {
 	LeverESP = false,
 	ClosetESP = false,
     JumpEnabled = false,
-	SlideEnabled = false
+	SlideEnabled = false,
+	AutoBreakerBox = false
+
 }
 
 pcall(function()
@@ -862,6 +864,10 @@ AddToggle(SecAutomation, "Auto Interact", "AutoInteract", function(state)
 	CatHubSettings.AutoInteract = state
 end)
 
+AddToggle(SecExploits, "Auto Breaker Box", "Automation", function(state)
+	CatHubSettings.AutoBreakerBox = state
+end)
+
 
 -- ==================== CONTEÚDO: ABA EXPLOITS ====================
 local SecBypass = CreateSection(ExploitsPage, "Bypasses")
@@ -1344,70 +1350,61 @@ RunService.RenderStepped:Connect(function()
         end
     end)
 
-        -- Lever ESP Corrigido para TimerLever (Backdoor) e LeverForGate
-    pcall(function()
-        local searchFolders = {workspace}
-        local currentRooms = workspace:FindFirstChild("CurrentRooms")
-        if currentRooms then
-            table.insert(searchFolders, currentRooms)
-        end
+    -- Substitua o bloco do Lever ESP no RenderStepped por este:
+pcall(function()
+	local currentRooms = workspace:FindFirstChild("CurrentRooms")
+	if currentRooms and settings.LeverESP then
+		for _, room in ipairs(currentRooms:GetChildren()) do
+			-- Só processa se a sala já estiver totalmente gerada (evita o bug de aparecer por 0.5s)
+			if room:IsA("Model") and room.Name ~= "Client" then
+				for _, obj in ipairs(room:GetDescendants()) do
+					if obj:IsA("Model") and (obj.Name == "LeverForGate" or obj.Name == "BreakableDoorLever" or obj.Name == "Lever") then
+						local targetPart = obj:FindFirstChild("Main") or obj:FindFirstChild("Handle") or obj:FindFirstChildWhichIsA("BasePart")
+						if targetPart and not obj:FindFirstChild("CatLeverESP") then
+							local hl = Instance.new("Highlight")
+							hl.Name = "CatLeverHighlight"
+							hl.FillColor = Color3.fromRGB(0, 255, 100)
+							hl.FillTransparency = 0.5
+							hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+							hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+							hl.Adornee = obj
+							hl.Parent = obj
 
-        for _, folder in ipairs(searchFolders) do
-            for _, obj in ipairs(folder:GetDescendants()) do
-                if obj:IsA("Model") and (obj.Name == "TimerLever" or obj.Name == "LeverForGate") then
-                    local targetPart = obj:FindFirstChild("Main") or obj:FindFirstChild("DisplayPlate") or obj:FindFirstChildWhichIsA("BasePart")
-                    
-                    if targetPart then
-                        if settings.LeverESP then
-                            -- 1. Pinta individualmente cada parte específica solicitada do TimerLever
-                            local targetPartNames = {"Caps", "GoalStuff", "Inset", "Main", "RotateThis", "WireBottom", "WireTop", "DisplayPlate", "Rim"}
-                            for _, pName in ipairs(targetPartNames) do
-                                local p = obj:FindFirstChild(pName, true)
-                                if p and (p:IsA("BasePart") or p:IsA("MeshPart")) and not p:FindFirstChild("CatTimerHighlight") then
-                                    local hl = Instance.new("Highlight")
-                                    hl.Name = "CatTimerHighlight"
-                                    hl.FillColor = Color3.fromRGB(0, 255, 100)
-                                    hl.FillTransparency = 0.5
-                                    hl.OutlineColor = Color3.fromRGB(255, 255, 255)
-                                    hl.OutlineTransparency = 0
-                                    hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-                                    hl.Adornee = p
-                                    hl.Parent = p
-                                end
-                            end
+							local bg = Instance.new("BillboardGui")
+							bg.Name = "CatLeverESP"
+							bg.Size = UDim2.new(0, 80, 0, 40)
+							bg.AlwaysOnTop = true
+							bg.Adornee = targetPart
+							bg.Parent = obj
 
-                            -- 2. Billboard com o texto verde "Timer Lever"
-                            if not obj:FindFirstChild("CatTimerESP") then
-                                local bg = Instance.new("BillboardGui")
-                                bg.Name = "CatTimerESP"
-                                bg.Size = UDim2.new(0, 110, 0, 40)
-                                bg.AlwaysOnTop = true
-                                bg.Adornee = targetPart
-                                bg.Parent = obj
-
-                                local lbl = Instance.new("TextLabel")
-                                lbl.Size = UDim2.new(1, 0, 1, 0)
-                                lbl.BackgroundTransparency = 1
-                                lbl.Text = "Timer Lever"
-                                lbl.TextColor3 = Color3.fromRGB(0, 255, 100)
-                                lbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-                                lbl.TextStrokeTransparency = 0
-                                lbl.Font = Enum.Font.Code
-                                lbl.TextSize = 12
-                                lbl.Parent = bg
-                            end
-                        else
-                            -- Limpeza ao desativar
-                            if obj:FindFirstChild("CatTimerESP") then obj.CatTimerESP:Destroy() end
-                            for _, desc in ipairs(obj:GetDescendants()) do
-                                if desc.Name == "CatTimerHighlight" then desc:Destroy() end
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end)
+							local lbl = Instance.new("TextLabel")
+							lbl.Size = UDim2.new(1, 0, 1, 0)
+							lbl.BackgroundTransparency = 1
+							lbl.Text = "Lever" -- Mudado estritamente para "Lever"
+							lbl.TextColor3 = Color3.fromRGB(0, 255, 100)
+							lbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+							lbl.TextStrokeTransparency = 0
+							lbl.Font = Enum.Font.Code
+							lbl.TextSize = 12
+							lbl.Parent = bg
+						end
+					end
+				end
+			end
+		end
+	elseif not settings.LeverESP then
+		local currentRooms = workspace:FindFirstChild("CurrentRooms")
+		if currentRooms then
+			for _, room in ipairs(currentRooms:GetChildren()) do
+				for _, obj in ipairs(room:GetDescendants()) do
+					if obj.Name == "CatLeverHighlight" or obj.Name == "CatLeverESP" then
+						obj:Destroy()
+					end
+				end
+			end
+		end
+	end
+end)
 
     -- Closet ESP (Corrigido)
     pcall(function()
@@ -1588,6 +1585,106 @@ RunService.RenderStepped:Connect(function()
             end
         end
     end)
+
+  -- 8 Sala 100 Chave elétrica e Breakers Switches
+    pcall(function()
+	local currentRooms = workspace:FindFirstChild("CurrentRooms")
+	local room100 = currentRooms and (currentRooms:FindFirstChild("100") or currentRooms:FindFirstChild("100_Garage"))
+	
+	-- Verifica se o Object ESP está ativado nas configurações do Cat Hub
+	if room100 and settings.ObjectESP then
+		
+		-- 1. Chave Elétrica (EletricalKeyObtain)
+		local assets = room100:FindFirstChild("Assets") or room100
+		for _, obj in ipairs(assets:GetDescendants()) do
+			if obj.Name == "EletricalKeyObtain" and obj:IsA("Model") then
+				local prompt = obj:FindFirstChild("ModulePrompt", true)
+				if prompt and prompt.ClassName == "ProximityPrompt" and prompt.ObjectText:lower():find("key") then
+					local targetPart = obj:FindFirstChildWhichIsA("BasePart")
+					if targetPart and not obj:FindFirstChild("CatElecKeyESP") then
+						local hl = Instance.new("Highlight")
+						hl.Name = "CatElecKeyHighlight"
+						hl.FillColor = Color3.fromRGB(255, 200, 0)
+						hl.FillTransparency = 0.5
+						hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+						hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+						hl.Adornee = obj
+						hl.Parent = obj
+
+						local bg = Instance.new("BillboardGui")
+						bg.Name = "CatElecKeyESP"
+						bg.Size = UDim2.new(0, 100, 0, 40)
+						bg.AlwaysOnTop = true
+						bg.Adornee = targetPart
+						bg.Parent = obj
+
+						local lbl = Instance.new("TextLabel")
+						lbl.Size = UDim2.new(1, 0, 1, 0)
+						lbl.BackgroundTransparency = 1
+						lbl.Text = "Key Electrical"
+						lbl.TextColor3 = Color3.fromRGB(255, 200, 0)
+						lbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+						lbl.TextStrokeTransparency = 0
+						lbl.Font = Enum.Font.Code
+						lbl.TextSize = 12
+						lbl.Parent = bg
+					end
+				end
+			end
+		end
+
+		-- 2. Breakers Switches (LiveBreakerPolePickup - Ignorando Hitbox e pegando Stuff/ImStuff)
+		for _, obj in ipairs(room100:GetDescendants()) do
+			if obj.Name == "LiveBreakerPolePickup" and obj:IsA("Model") then
+				local basePart = obj:FindFirstChild("Base")
+				if basePart then
+					for _, part in ipairs(basePart:GetDescendants()) do
+						if (part.Name == "Stuff" or part.Name == "ImStuff") and not part.Name:lower():find("hitbox") then
+							if not part:FindFirstChild("CatBreakerHighlight") then
+								local hl = Instance.new("Highlight")
+								hl.Name = "CatBreakerHighlight"
+								hl.FillColor = Color3.fromRGB(0, 255, 100)
+								hl.FillTransparency = 0.5
+								hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+								hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+								hl.Adornee = part
+								hl.Parent = part
+
+								local bg = Instance.new("BillboardGui")
+								bg.Name = "CatBreakerESP"
+								bg.Size = UDim2.new(0, 120, 0, 40)
+								bg.AlwaysOnTop = true
+								bg.Adornee = part
+								bg.Parent = part
+
+								local lbl = Instance.new("TextLabel")
+								lbl.Size = UDim2.new(1, 0, 1, 0)
+								lbl.BackgroundTransparency = 1
+								lbl.Text = "Breaker Switches"
+								lbl.TextColor3 = Color3.fromRGB(0, 255, 100)
+								lbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+								lbl.TextStrokeTransparency = 0
+								lbl.Font = Enum.Font.Code
+								lbl.TextSize = 11
+								lbl.Parent = bg
+							end
+						end
+					end
+				end
+			end
+		end
+		
+	else
+		-- Se o Object ESP estiver desligado, limpa tudo da Sala 100
+		if room100 then
+			for _, obj in ipairs(room100:GetDescendants()) do
+				if obj.Name == "CatElecKeyHighlight" or obj.Name == "CatElecKeyESP" or obj.Name == "CatBreakerHighlight" or obj.Name == "CatBreakerESP" then
+					obj:Destroy()
+				end
+			end
+		end
+	end
+end)
 
 	-- 8. Item ESP Corrigido (Apenas em Assets, com MeshPart "Handle" e BindableEvent "Grab")
 	pcall(function()
@@ -1954,24 +2051,49 @@ task.spawn(function()
     end
 end)
 
+task.spawn(function()
+	while task.wait(0.3) do
+		local settings = _G.CatHubSettings or CatHubSettings
+		if settings and settings.AutoBreakerBox then
+			pcall(function()
+				local currentRooms = workspace:FindFirstChild("CurrentRooms")
+				local room100 = currentRooms and (currentRooms:FindFirstChild("100") or currentRooms:FindFirstChild("100_Garage"))
+				
+				if room100 then
+					local breakerBox = room100:FindFirstChild("BreakerBox", true)
+					if breakerBox then
+						for _, obj in ipairs(breakerBox:GetDescendants()) do
+							local prompt = obj:FindFirstChildOfClass("ProximityPrompt")
+							if prompt and prompt.Enabled then
+								fireproximityprompt(prompt)
+							end
+						end
+					end
+				end
+			end)
+		end
+	end
+end)
 
--- ==================== ANIMAÇÃO DE ABRIR E FECHAR NO MEIO DA TELA ====================
 local isOpen = false
 
 local function ToggleGuiAnimation()
 	isOpen = not isOpen
+	
+	-- Define o tamanho ideal baseado se é celular ou PC (pegando o tamanho atual definido na inicialização)
+	local targetSize = MainEnabledSize or MainFrame.Size 
+	
 	if isOpen then
 		MainFrame.Visible = true
 		MainFrame.Size = UDim2.new(0, 0, 0, 0)
 		MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
 
-		-- Na função de animação de abertura (ToggleGuiAnimation):
 		MainFrame:TweenSizeAndPosition(
-    		UDim2.new(0, 480, 0, 280), -- Atualizado para o novo tamanho compacto
+    		targetSize, -- Usa o tamanho responsivo correto do dispositivo
     		UDim2.new(0.5, 0, 0.5, 0), 
     		Enum.EasingDirection.Out, 
     		Enum.EasingStyle.Back, 
-    		0.35, 
+    5.35, 
     		true
 		)
 	else
@@ -1997,6 +2119,52 @@ MinimizeBtn.MouseButton1Click:Connect(function()
 	if isOpen then ToggleGuiAnimation() end
 end)
 
+-- Toggle Arrastável
+local ToggleButton = CatHubGui:FindFirstChild("ToggleButton") -- Já existe no seu script
+local dragging, dragInput, dragStart, startPos
+
+ToggleButton.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = ToggleButton.Position
+		
+		input.Changed:Connect(function()
+			if input.UserInputType == Enum.UserInputType.State and input.UserInputType == Enum.UserInputType.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+		local delta = input.Position - dragStart
+		local viewport = workspace.CurrentCamera.ViewportSize
+		
+		-- Calcula a nova posição travada dentro dos limites da tela
+		local newX = math.clamp(startPos.X.Offset + delta.X, 0, viewport.X - ToggleButton.AbsoluteSize.X)
+		local newY = math.clamp(startPos.Y.Offset + delta.Y, 0, viewport.Y - ToggleButton.AbsoluteSize.Y)
+		
+		ToggleButton.Position = UDim2.new(0, newX, 0, newY)
+	end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = false
+	end
+end)
+
+local MainFrame = CatHubGui:FindFirstChild("MainFrame") -- Já existe no seu script
+if MainFrame then
+	local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+	if isMobile then
+		MainFrame.Size = UDim2.new(0, 380, 0, 240) -- Tamanho compacto ideal para celular
+	else
+		MainFrame.Size = UDim2.new(0, 550, 0, 320) -- Tamanho confortável ideal para PC
+	end
+end
 
 -- ==================== JANELA DE CONFIRMAÇÃO KILL HUB ====================
 local ConfirmGui = Instance.new("Frame")
