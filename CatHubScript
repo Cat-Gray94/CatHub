@@ -1290,18 +1290,42 @@ RunService.RenderStepped:Connect(function()
 		end
 	end
 
-	-- 3. Light (Fullbright Reversível)
-	if settings.LightEnabled then
-		Lighting.Brightness = 2
-		Lighting.ClockTime = 14
-		Lighting.GlobalShadows = false
-		Lighting.FogEnd = 999999
-	else
-		Lighting.Brightness = originalBrightness
-		Lighting.ClockTime = originalClockTime
-		Lighting.GlobalShadows = originalShadows
-		Lighting.FogEnd = originalFogEnd
-	end
+	-- Fullbright Inteligente (Ativa apenas em ambientes escuros/sem luz)
+	pcall(function()
+		if settings.LightEnabled then
+			-- Verifica a luminosidade atual do ambiente (pode usar o ClockTime ou verificar a sala atual)
+			local currentRoom = workspace:FindFirstChild("LatestRoom") and workspace.CurrentRoom or nil
+			local isDarkRoom = false
+
+			if currentRoom then
+				-- Se a sala atual tiver uma propriedade de luz baixa ou for uma sala escura conhecida
+				local ambient = Lighting.OutdoorAmbient
+				if (ambient.R + ambient.G + ambient.B) < 0.3 then
+					isDarkRoom = true
+				end
+			end
+
+			-- Se o jogo estiver muito escuro ou o brilho ambiente cair, aplica o Fullbright temporário
+			if Lighting.Brightness < 1 or Lighting.ClockTime == 0 or isDarkRoom then
+				Lighting.Brightness = 2
+				Lighting.ClockTime = 14
+				Lighting.GlobalShadows = false
+				Lighting.FogEnd = 999999
+			else
+				-- Se a sala estiver iluminada normalmente, devolve os valores padrão do jogo
+				Lighting.Brightness = originalBrightness
+				Lighting.ClockTime = originalClockTime
+				Lighting.GlobalShadows = originalShadows
+				Lighting.FogEnd = originalFogEnd
+			end
+		else
+			-- Se o toggle estiver desligado no menu, mantém tudo padrão
+			Lighting.Brightness = originalBrightness
+			Lighting.ClockTime = originalClockTime
+			Lighting.GlobalShadows = originalShadows
+			Lighting.FogEnd = originalFogEnd
+		end
+	end)
 
         -- Door ESP Limpo (Linha branca no "Door" e "CrossBoards", e número da sala + 1)
     pcall(function()
