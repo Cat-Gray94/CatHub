@@ -298,16 +298,9 @@ local function CreateTab(name, iconId)
 	Page.Visible = false
 	Page.Parent = ContentArea
 
-		local PageLayout
-	if name == "Info" or name == "General" or name == "Exploits" or name == "Visuals" or name == "Floors" or name == "Settings" then
-		PageLayout = Instance.new("UIListLayout")
-		PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
-		PageLayout.Padding = UDim.new(0, 10)
-	else
-		PageLayout = Instance.new("UIGridLayout")
-		PageLayout.CellSize = UDim2.new(0.48, 0, 0, 390)
-		PageLayout.CellPadding = UDim2.new(0.04, 0, 0, 10)
-	end
+			local PageLayout = Instance.new("UIGridLayout")
+	PageLayout.CellSize = UDim2.new(0.48, 0, 0, 390)
+	PageLayout.CellPadding = UDim2.new(0.04, 0, 0, 10)
 	PageLayout.Parent = Page
 
 	TabButton.MouseButton1Click:Connect(function()
