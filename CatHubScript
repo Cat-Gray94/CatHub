@@ -52,7 +52,7 @@ _G.CatHubSettings = _G.CatHubSettings or {
 	AutoBreakerBox = false,
 	BypassEyes = false,
 	PositionSpoof = false,
-	CrouchSpoof = false.
+	CrouchSpoof = false,
 	AutoCloset = false
 
 }
