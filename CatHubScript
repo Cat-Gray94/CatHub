@@ -7,6 +7,9 @@ if not getgenv then
 	getgenv = function() return _G end
 end
 
+if not game:IsLoaded() then
+	game.Loaded:Wait()
+end
 local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
@@ -17,7 +20,7 @@ local SoundService = game:GetService("SoundService")
 local Lighting = game:GetService("Lighting")
 local LogService = game:GetService("LogService")
 local PathfindingService = game:GetService("PathfindingService")
-local LocalPlayer = Players.LocalPlayer
+local LocalPlayer = Players.LocalPlayer or Players.PlayerAdded:Wait()
 local Camera = workspace.CurrentCamera
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RemotesFolder = ReplicatedStorage:FindFirstChild("RemotesFolder") or ReplicatedStorage:FindFirstChild("Remotes")
@@ -611,6 +614,26 @@ end
 
 -- ==================== SISTEMA DE NOTIFICAÇÃO COM "CAT HUB" EM CIMA ====================
 local function ShowNotification(textMsg)
+	-- Container para empilhar notificações
+local NotifContainer = CatHubGui:FindFirstChild("NotifContainer")
+if not NotifContainer then
+	NotifContainer = Instance.new("Frame")
+	NotifContainer.Name = "NotifContainer"
+	NotifContainer.Size = UDim2.new(0, 290, 1, -40)
+	NotifContainer.Position = UDim2.new(1, -300, 0, 20)
+	NotifContainer.BackgroundTransparency = 1
+	NotifContainer.Parent = CatHubGui
+
+	local NotifLayout = Instance.new("UIListLayout")
+	NotifLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	NotifLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+	NotifLayout.Padding = UDim.new(0, 8)
+	NotifLayout.Parent = NotifContainer
+end
+
+local function ShowNotification(textMsg, duration)
+	duration = duration or 5
+
 	pcall(function()
 		local sound = Instance.new("Sound")
 		sound.SoundId = "rbxassetid://110217765141398"
@@ -620,17 +643,19 @@ local function ShowNotification(textMsg)
 		game:GetService("Debris"):AddItem(sound, 4)
 	end)
 
-	if CatHubGui:FindFirstChild("NotificationFrame") then
-		CatHubGui.NotificationFrame:Destroy()
-	end
+	-- Wrapper controla o espaço ocupado na lista para animar a entrada lateral suavemente
+	local Wrapper = Instance.new("Frame")
+	Wrapper.Size = UDim2.new(1, 0, 0, 65)
+	Wrapper.BackgroundTransparency = 1
+	Wrapper.Parent = NotifContainer
 
 	local NotifFrame = Instance.new("Frame")
 	NotifFrame.Name = "NotificationFrame"
 	NotifFrame.Size = UDim2.new(0, 280, 0, 65)
-	NotifFrame.Position = UDim2.new(1, 320, 0, 20)
+	NotifFrame.Position = UDim2.new(1, 320, 0, 0)
 	NotifFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 25)
 	NotifFrame.BorderSizePixel = 0
-	NotifFrame.Parent = CatHubGui
+	NotifFrame.Parent = Wrapper
 
 	local NotifCorner = Instance.new("UICorner")
 	NotifCorner.CornerRadius = UDim.new(0, 8)
@@ -676,25 +701,62 @@ local function ShowNotification(textMsg)
 	TimeBar.BorderSizePixel = 0
 	TimeBar.Parent = TimeBarBg
 
-	NotifFrame:TweenPosition(UDim2.new(1, -295, 0, 20), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.3, true)
+	NotifFrame:TweenPosition(UDim2.new(0, 5, 0, 0), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.3, true)
 
-	local tweenInfo = TweenInfo.new(5, Enum.EasingStyle.Linear)
+	local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
 	local tween = TweenService:Create(TimeBar, tweenInfo, {Size = UDim2.new(0, 0, 1, 0)})
 	tween:Play()
 
-	task.delay(5.3, function()
+	task.delay(duration, function()
 		if NotifFrame and NotifFrame.Parent then
-			NotifFrame:TweenPosition(UDim2.new(1, 320, 0, 20), Enum.EasingDirection.In, Enum.EasingStyle.Quad, 0.3, true)
+			NotifFrame:TweenPosition(UDim2.new(1, 320, 0, 0), Enum.EasingDirection.In, Enum.EasingStyle.Quad, 0.3, true)
 			task.wait(0.3)
-			NotifFrame:Destroy()
-		end
-	end)
+			if Wrapper and Wrapper.Parent then
+				Wrapper:Destroy()
+				end
+			end
+		end)
+	end
 end
 
--- Notificação Inicial
 task.spawn(function()
-	task.wait(1)
-	ShowNotification("Thanks for using my script :)")
+	-- 1. Verifica se o jogo ainda está carregando
+	if not game:IsLoaded() then
+		ShowNotification("Waiting for the game to load...", 4)
+		game.Loaded:Wait()
+	end
+
+	-- 2. Verifica se o executor suporta as funções necessárias do hub
+	local execName = "Unknown"
+	pcall(function()
+		if identifyexecutor then
+			execName = tostring(identifyexecutor())
+		elseif getexecutorname then
+			execName = tostring(getexecutorname())
+		end
+	end)
+
+	local isSupported = (type(fireproximityprompt) == "function" or type(getgenv) == "function")
+		and execName ~= "Unknown"
+		and execName ~= "ERROR"
+
+	if not isSupported then
+		ShowNotification("Your executor (" .. execName .. ") does not support this script.", 5)
+		task.wait(5.3) -- Espera a notificação terminar de sair da tela
+		if CatHubGui then CatHubGui:Destroy() end
+		if script then script:Destroy() end
+		return
+	end
+
+	-- 3. Verifica se o jogo atual é o Doors (GameId oficial do Doors: 2440500124)
+	local isDoors = (game.GameId == 2440500124) or (ReplicatedStorage:FindFirstChild("RemotesFolder") ~= nil)
+	if not isDoors then
+		ShowNotification("this game is not Doors, the script might not work", 6)
+	end
+
+	-- 4. Notificação de boas-vindas
+	task.wait(0.5)
+	ShowNotification("Thanks for using my script :)", 5)
 end)
 
 -- ==================== CONTEÚDO: ABA INFO ====================
@@ -724,7 +786,9 @@ local AvatarImg = Instance.new("ImageLabel")
 AvatarImg.Size = UDim2.new(0, 120, 0, 120)
 AvatarImg.Position = UDim2.new(0.5, -60, 0, 45)
 AvatarImg.BackgroundColor3 = Color3.fromRGB(13, 13, 18)
-AvatarImg.Image = Players:GetUserThumbnailAsync(LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
+pcall(function()
+	AvatarImg.Image = Players:GetUserThumbnailAsync(LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
+end)
 AvatarImg.Parent = SecUserInfo
 
 local AvatarCorner = Instance.new("UICorner")
@@ -790,7 +854,7 @@ end)
 local ExecTestLbl = Instance.new("TextLabel")
 ExecTestLbl.Size = UDim2.new(1, 0, 0, 24)
 ExecTestLbl.BackgroundTransparency = 1
-ExecTestLbl.Text = "Executor: " .. detectedExecutor
+ExecTestLbl.Text = "Executor: " .. tostring(detectedExecutor or "Unknown")
 ExecTestLbl.TextColor3 = (detectedExecutor == "ERROR") and Color3.fromRGB(220, 60, 60) or Color3.fromRGB(80, 220, 100)
 ExecTestLbl.Font = Enum.Font.Code
 ExecTestLbl.TextSize = 12
