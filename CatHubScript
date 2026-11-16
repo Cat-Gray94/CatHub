@@ -52,7 +52,8 @@ _G.CatHubSettings = _G.CatHubSettings or {
 	AutoBreakerBox = false,
 	BypassEyes = false,
 	PositionSpoof = false,
-	CrouchSpoof = false
+	CrouchSpoof = false.
+	AutoCloset = false
 
 }
 
@@ -872,13 +873,17 @@ AddToggle(SecChar, "Enable Sliding", "SlideEnabled", function(state)
 	CatHubSettings.SlideEnabled = state
 end)
 
-local SecAutomation = CreateSection(GeneralPage, "Automation")
+local SecAutomation = CreateSection(GeneralPage, "Automations")
 AddToggle(SecAutomation, "Auto Interact", "AutoInteract", function(state)
 	CatHubSettings.AutoInteract = state
 end)
 
 AddToggle(SecAutomation, "Auto Breaker Box", "Automation", function(state)
 	CatHubSettings.AutoBreakerBox = state
+end)
+
+AddToggle(SecAutomation, "Auto Closet", "AutoCloset", function(state)
+	CatHubSettings.AutoCloset = state
 end)
 
 -- ==================== CONTEÚDO: ABA EXPLOITS ====================
@@ -2128,6 +2133,107 @@ task.spawn(function()
 			end)
 		end
 	end
+end)
+
+-- ==================== AUTO CLOSET ====================
+local entityDistances = {
+	RushMoving = 100,
+	AmbushMoving = 100,
+	BackdoorRush = 100,
+	BashMoving = 100,
+	Scribbles = 40,
+	A60 = 100,
+	A120 = 100
+}
+
+local function GetNearestThreatEntity()
+	local char = LocalPlayer.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	if not root then return nil end
+
+	local nearestEntity = nil
+	local shortestDist = math.huge
+
+	for _, v in ipairs(workspace:GetChildren()) do
+		if v:IsA("Model") and entityDistances[v.Name] then
+			local part = v.PrimaryPart or v:FindFirstChildWhichIsA("BasePart")
+			if part then
+				local dist = (root.Position - part.Position).Magnitude
+				if dist <= entityDistances[v.Name] and dist < shortestDist then
+					shortestDist = dist
+					nearestEntity = v
+				end
+			end
+		end
+	end
+	return nearestEntity
+end
+
+local function GetNearestCloset()
+	local char = LocalPlayer.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	local currentRooms = workspace:FindFirstChild("CurrentRooms")
+	if not root or not currentRooms then return nil end
+
+	local nearestCloset = nil
+	local shortestDist = 35 -- Alcance máximo para entrar no armário
+
+	for _, room in ipairs(currentRooms:GetChildren()) do
+		local assets = room:FindFirstChild("Assets")
+		if assets then
+			for _, obj in ipairs(assets:GetDescendants()) do
+				if obj:IsA("Model") and (obj.Name == "Wardrobe" or obj.Name:find("Locker") or obj.Name:find("Bed")) then
+					local prompt = obj:FindFirstChild("HidePrompt", true) or obj:FindFirstChild("HidingPrompt", true)
+					local part = obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
+					if prompt and prompt.Enabled and part then
+						local dist = (root.Position - part.Position).Magnitude
+						if dist < shortestDist then
+							shortestDist = dist
+							nearestCloset = prompt
+						end
+					end
+				end
+			end
+		end
+	end
+	return nearestCloset
+end
+
+local lastAutoHide = 0
+RunService.Heartbeat:Connect(function()
+	local settings = _G.CatHubSettings or CatHubSettings
+	if not settings or not settings.AutoCloset or (tick() - lastAutoHide) <= 0.1 then return end
+
+	local char = LocalPlayer.Character
+	if not char then return end
+
+	local isHiding = char:GetAttribute("Hiding") == true
+	local entity = GetNearestThreatEntity()
+
+	-- Sai automaticamente assim que a entidade passar e sumir
+	if isHiding then
+		if not entity then
+			pcall(function()
+				if RemotesFolder and RemotesFolder:FindFirstChild("CamLock") then
+					RemotesFolder.CamLock:FireServer()
+				end
+			end)
+		end
+		lastAutoHide = tick()
+		return
+	end
+
+	-- Entra no armário mais próximo se houver entidade por perto
+	if entity then
+		local prompt = GetNearestCloset()
+		if prompt then
+			pcall(function()
+				fireproximityprompt(prompt)
+			end)
+		end
+	end
+
+	lastAutoHide = tick()
 end)
 
 local isOpen = false
