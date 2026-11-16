@@ -616,13 +616,15 @@ if not NotifContainer then
 	NotifContainer = Instance.new("Frame")
 	NotifContainer.Name = "NotifContainer"
 	NotifContainer.Size = UDim2.new(0, 290, 1, -40)
-	NotifContainer.Position = UDim2.new(1, -300, 0, 20)
+	NotifContainer.AnchorPoint = Vector2.new(1, 0)
+	NotifContainer.Position = UDim2.new(1, -15, 0, 20)
 	NotifContainer.BackgroundTransparency = 1
 	NotifContainer.Parent = CatHubGui
 
 	local NotifLayout = Instance.new("UIListLayout")
 	NotifLayout.Name = "NotifLayout"
 	NotifLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	NotifLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
 	NotifLayout.VerticalAlignment = Enum.VerticalAlignment.Top
 	NotifLayout.Padding = UDim.new(0, 8)
 	NotifLayout.Parent = NotifContainer
@@ -654,7 +656,8 @@ local function ShowNotification(textMsg, duration)
 	local NotifFrame = Instance.new("Frame")
 	NotifFrame.Name = "NotificationFrame"
 	NotifFrame.Size = UDim2.new(0, 280, 0, 65)
-	NotifFrame.Position = UDim2.new(1, 320, 0, 0)
+	NotifFrame.AnchorPoint = Vector2.new(1, 0)
+	NotifFrame.Position = UDim2.new(1, 300, 0, 0) -- Começa fora da tela à direita
 	NotifFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 25)
 	NotifFrame.BorderSizePixel = 0
 	NotifFrame.Parent = Wrapper
@@ -702,6 +705,52 @@ local function ShowNotification(textMsg, duration)
 	TimeBar.BackgroundColor3 = Color3.fromRGB(130, 85, 245)
 	TimeBar.BorderSizePixel = 0
 	TimeBar.Parent = TimeBarBg
+
+	task.spawn(function()
+		-- 1. Entra suavemente até encostar na borda direita (UDim2.new(1, 0, 0, 0))
+		local enterTween = TweenService:Create(
+			NotifFrame,
+			TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+			{Position = UDim2.new(1, 0, 0, 0)}
+		)
+		enterTween:Play()
+		enterTween.Completed:Wait()
+
+		-- 2. Conta o tempo exato na tela
+		local barTween = TweenService:Create(
+			TimeBar,
+			TweenInfo.new(duration, Enum.EasingStyle.Linear),
+			{Size = UDim2.new(0, 0, 1, 0)}
+		)
+		barTween:Play()
+		task.wait(duration)
+
+		-- 3. Sai para fora da tela à direita
+		if NotifFrame and NotifFrame.Parent then
+			local exitTween = TweenService:Create(
+				NotifFrame,
+				TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+				{Position = UDim2.new(1, 300, 0, 0)}
+			)
+			exitTween:Play()
+			exitTween.Completed:Wait()
+		end
+
+		-- 4. Puxa suavemente as notificações de baixo para cima
+		if Wrapper and Wrapper.Parent then
+			local slideUpTween = TweenService:Create(
+				Wrapper,
+				TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+				{Size = UDim2.new(1, 0, 0, -8)}
+			)
+			slideUpTween:Play()
+			slideUpTween.Completed:Wait()
+			if Wrapper and Wrapper.Parent then
+				Wrapper:Destroy()
+			end
+		end
+	end)
+end
 
 	-- Fluxo sequencial isolado por notificação
 	task.spawn(function()
