@@ -915,13 +915,11 @@ AddToggle(SecManipulations, "Position Spoof", "PositionSpoof", function(state)
 		local humanoid = char and char:FindFirstChildOfClass("Humanoid")
 		if rootPart and humanoid then
 			if state then
-				-- Joga levemente para cima para escapar do hitbox das entidades no chão
-				rootPart.CFrame = rootPart.CFrame + Vector3.new(0, 3.5, 0)
-				if RemotesFolder and RemotesFolder:FindFirstChild("Crouch") then
-					RemotesFolder.Crouch:FireServer(true, true)
-				end
+				rootPart.CFrame = rootPart.CFrame * CFrame.new(0, -2, 0)
+				humanoid.HipHeight = 0.2
 			else
-				rootPart.CFrame = rootPart.CFrame - Vector3.new(0, 3.5, 0)
+				rootPart.CFrame = rootPart.CFrame * CFrame.new(0, 2, 0)
+				humanoid.HipHeight = 2.396
 			end
 		end
 	end)
@@ -1300,36 +1298,14 @@ RunService.RenderStepped:Connect(function()
 		end
 	end
 
-	-- Fullbright Inteligente (Ativa apenas em ambientes escuros/sem luz)
+		-- Fullbright Direto
 	pcall(function()
 		if settings.LightEnabled then
-			-- Verifica a luminosidade atual do ambiente (pode usar o ClockTime ou verificar a sala atual)
-			local currentRoom = workspace:FindFirstChild("LatestRoom") and workspace.CurrentRoom or nil
-			local isDarkRoom = false
-
-			if currentRoom then
-				-- Se a sala atual tiver uma propriedade de luz baixa ou for uma sala escura conhecida
-				local ambient = Lighting.OutdoorAmbient
-				if (ambient.R + ambient.G + ambient.B) < 0.3 then
-					isDarkRoom = true
-				end
-			end
-
-			-- Se o jogo estiver muito escuro ou o brilho ambiente cair, aplica o Fullbright temporário
-			if Lighting.Brightness < 1 or Lighting.ClockTime == 0 or isDarkRoom then
-				Lighting.Brightness = 2
-				Lighting.ClockTime = 14
-				Lighting.GlobalShadows = false
-				Lighting.FogEnd = 999999
-			else
-				-- Se a sala estiver iluminada normalmente, devolve os valores padrão do jogo
-				Lighting.Brightness = originalBrightness
-				Lighting.ClockTime = originalClockTime
-				Lighting.GlobalShadows = originalShadows
-				Lighting.FogEnd = originalFogEnd
-			end
+			Lighting.Brightness = 2
+			Lighting.ClockTime = 14
+			Lighting.GlobalShadows = false
+			Lighting.FogEnd = 999999
 		else
-			-- Se o toggle estiver desligado no menu, mantém tudo padrão
 			Lighting.Brightness = originalBrightness
 			Lighting.ClockTime = originalClockTime
 			Lighting.GlobalShadows = originalShadows
@@ -2006,6 +1982,11 @@ end)
 		ShowNotification("Speed Boost can break Crouch Spoof")
 	elseif not (CatHubSettings.SpeedEnabled and CatHubSettings.CrouchSpoof) then
 		notifiedSpeedCrouch = nil
+	end
+
+    	-- Trava a gravidade do Position Spoof para não cair no void
+	if settings.PositionSpoof and rootPart then
+		rootPart.AssemblyLinearVelocity = Vector3.new(rootPart.AssemblyLinearVelocity.X, 0, rootPart.AssemblyLinearVelocity.Z)
 	end
 
 end)
