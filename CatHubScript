@@ -298,9 +298,16 @@ local function CreateTab(name, iconId)
 	Page.Visible = false
 	Page.Parent = ContentArea
 
-	local PageLayout = Instance.new("UIGridLayout")
-	PageLayout.CellSize = UDim2.new(0.48, 0, 0, 390)
-	PageLayout.CellPadding = UDim2.new(0.04, 0, 0, 10)
+		local PageLayout
+	if name == "Info" or name == "General" or name == "Exploits" or name == "Visuals" or name == "Floors" or name == "Settings" then
+		PageLayout = Instance.new("UIListLayout")
+		PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
+		PageLayout.Padding = UDim.new(0, 10)
+	else
+		PageLayout = Instance.new("UIGridLayout")
+		PageLayout.CellSize = UDim2.new(0.48, 0, 0, 390)
+		PageLayout.CellPadding = UDim2.new(0.04, 0, 0, 10)
+	end
 	PageLayout.Parent = Page
 
 	TabButton.MouseButton1Click:Connect(function()
@@ -906,21 +913,14 @@ local SecItems = CreateSection(ExploitsPage, "Items")
 AddToggle(SecItems, "Infinite Items", "InfiniteItems", function(state)
 	CatHubSettings.InfiniteItems = state
 end)
+
 local SecManipulations = CreateSection(ExploitsPage, "Manipulations")
 AddToggle(SecManipulations, "Position Spoof", "PositionSpoof", function(state)
 	CatHubSettings.PositionSpoof = state
 	pcall(function()
-		local char = LocalPlayer.Character
-		local rootPart = char and char:FindFirstChild("HumanoidRootPart")
-		local humanoid = char and char:FindFirstChildOfClass("Humanoid")
-		if rootPart and humanoid then
-			if state then
-				rootPart.CFrame = rootPart.CFrame * CFrame.new(0, -2, 0)
-				humanoid.HipHeight = 0.2
-			else
-				rootPart.CFrame = rootPart.CFrame * CFrame.new(0, 2, 0)
-				humanoid.HipHeight = 2.396
-			end
+		if RemotesFolder and RemotesFolder:FindFirstChild("Crouch") then
+			-- Dispara o remote nativo do Doors simulando agachamento profundo para burlar o hitbox das entidades
+			RemotesFolder.Crouch:FireServer(state, true)
 		end
 	end)
 end)
