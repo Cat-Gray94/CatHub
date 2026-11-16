@@ -752,53 +752,6 @@ local function ShowNotification(textMsg, duration)
 	end)
 end
 
-	-- Fluxo sequencial isolado por notificação
-	task.spawn(function()
-		-- 1. Animação de entrada (0.3s)
-		local enterTween = TweenService:Create(
-			NotifFrame,
-			TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingStyle.Out),
-			{Position = UDim2.new(0, 5, 0, 0)}
-		)
-		enterTween:Play()
-		enterTween.Completed:Wait() -- Só começa a contar os 5s DEPOIS de parar na tela
-
-		-- 2. Barra de tempo e contagem exata de 5 segundos na tela
-		local barTween = TweenService:Create(
-			TimeBar,
-			TweenInfo.new(duration, Enum.EasingStyle.Linear),
-			{Size = UDim2.new(0, 0, 1, 0)}
-		)
-		barTween:Play()
-		task.wait(duration)
-
-		-- 3. Animação de saída para a direita (0.25s)
-		if NotifFrame and NotifFrame.Parent then
-			local exitTween = TweenService:Create(
-				NotifFrame,
-				TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingStyle.In),
-				{Position = UDim2.new(1, 320, 0, 0)}
-			)
-			exitTween:Play()
-			exitTween.Completed:Wait()
-		end
-
-		-- 4. Encolhe o espaço ocupado (incluindo os 8px de padding) para a de baixo subir suavemente
-		if Wrapper and Wrapper.Parent then
-			local slideUpTween = TweenService:Create(
-				Wrapper,
-				TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-				{Size = UDim2.new(1, 0, 0, -8)}
-			)
-			slideUpTween:Play()
-			slideUpTween.Completed:Wait()
-			if Wrapper and Wrapper.Parent then
-				Wrapper:Destroy()
-			end
-		end
-	end)
-end
-
 task.spawn(function()
 	-- 1. Verifica se o jogo ainda está carregando
 	if not game:IsLoaded() then
