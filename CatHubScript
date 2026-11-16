@@ -613,8 +613,6 @@ local function AddSlider(section, text, min, max, default, settingKey, callback)
 end
 
 -- ==================== SISTEMA DE NOTIFICAÇÃO COM "CAT HUB" EM CIMA ====================
-local function ShowNotification(textMsg)
-	-- Container para empilhar notificações
 local NotifContainer = CatHubGui:FindFirstChild("NotifContainer")
 if not NotifContainer then
 	NotifContainer = Instance.new("Frame")
@@ -643,7 +641,6 @@ local function ShowNotification(textMsg, duration)
 		game:GetService("Debris"):AddItem(sound, 4)
 	end)
 
-	-- Wrapper controla o espaço ocupado na lista para animar a entrada lateral suavemente
 	local Wrapper = Instance.new("Frame")
 	Wrapper.Size = UDim2.new(1, 0, 0, 65)
 	Wrapper.BackgroundTransparency = 1
@@ -713,51 +710,10 @@ local function ShowNotification(textMsg, duration)
 			task.wait(0.3)
 			if Wrapper and Wrapper.Parent then
 				Wrapper:Destroy()
-				end
 			end
-		end)
-	end
-end
-
-task.spawn(function()
-	-- 1. Verifica se o jogo ainda está carregando
-	if not game:IsLoaded() then
-		ShowNotification("Waiting for the game to load...", 4)
-		game.Loaded:Wait()
-	end
-
-	-- 2. Verifica se o executor suporta as funções necessárias do hub
-	local execName = "Unknown"
-	pcall(function()
-		if identifyexecutor then
-			execName = tostring(identifyexecutor())
-		elseif getexecutorname then
-			execName = tostring(getexecutorname())
 		end
 	end)
-
-	local isSupported = (type(fireproximityprompt) == "function" or type(getgenv) == "function")
-		and execName ~= "Unknown"
-		and execName ~= "ERROR"
-
-	if not isSupported then
-		ShowNotification("Your executor (" .. execName .. ") does not support this script.", 5)
-		task.wait(5.3) -- Espera a notificação terminar de sair da tela
-		if CatHubGui then CatHubGui:Destroy() end
-		if script then script:Destroy() end
-		return
-	end
-
-	-- 3. Verifica se o jogo atual é o Doors (GameId oficial do Doors: 2440500124)
-	local isDoors = (game.GameId == 2440500124) or (ReplicatedStorage:FindFirstChild("RemotesFolder") ~= nil)
-	if not isDoors then
-		ShowNotification("this game is not Doors, the script might not work", 6)
-	end
-
-	-- 4. Notificação de boas-vindas
-	task.wait(0.5)
-	ShowNotification("Thanks for using my script :)", 5)
-end)
+end
 
 -- ==================== CONTEÚDO: ABA INFO ====================
 local SecUserInfo = CreateSection(InfoPage, "User Info")
