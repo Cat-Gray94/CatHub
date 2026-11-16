@@ -17,11 +17,12 @@ local SoundService = game:GetService("SoundService")
 local Lighting = game:GetService("Lighting")
 local LogService = game:GetService("LogService")
 local PathfindingService = game:GetService("PathfindingService")
-local LocalPlayer = Players.LocalPlayer or Players.PlayerAdded:Wait()
+local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RemotesFolder = ReplicatedStorage:FindFirstChild("RemotesFolder") or ReplicatedStorage:FindFirstChild("Remotes")
 
+local hasRealExecutorSupport = (type(fireproximityprompt) == "function")
 fireproximityprompt = fireproximityprompt or function() end
 identifyexecutor = identifyexecutor or function() return "Unknown" end
 
@@ -711,6 +712,46 @@ local function ShowNotification(textMsg, duration)
 		end
 	end)
 end
+
+task.spawn(function()
+	-- 1. Verifica se o jogo ainda está carregando
+	if not game:IsLoaded() then
+		ShowNotification("Waiting for the game to load...", 4)
+		game.Loaded:Wait()
+	end
+
+	-- 2. Verifica se o executor suporta as funções necessárias do hub
+	local execName = "Unknown"
+	pcall(function()
+		if identifyexecutor then
+			execName = tostring(identifyexecutor())
+		elseif getexecutorname then
+			execName = tostring(getexecutorname())
+		end
+	end)
+
+	local isSupported = hasRealExecutorSupport
+		and execName ~= "Unknown"
+		and execName ~= "ERROR"
+
+	if not isSupported then
+		ShowNotification("Your executor (" .. execName .. ") does not support this script.", 5)
+		task.wait(5.3)
+		if CatHubGui then CatHubGui:Destroy() end
+		if script then script:Destroy() end
+		return
+	end
+
+	-- 3. Verifica se o jogo atual é o Doors (GameId oficial do Doors: 2440500124)
+	local isDoors = (game.GameId == 2440500124) or (ReplicatedStorage:FindFirstChild("RemotesFolder") ~= nil)
+	if not isDoors then
+		ShowNotification("this game is not Doors, the script might not work", 6)
+	end
+
+	-- 4. Notificação de boas-vindas
+	task.wait(0.5)
+	ShowNotification("Thanks for using my script :)", 5)
+end)
 
 -- ==================== CONTEÚDO: ABA INFO ====================
 local SecUserInfo = CreateSection(InfoPage, "User Info")
