@@ -642,6 +642,7 @@ local function ShowNotification(textMsg, duration)
 	local Wrapper = Instance.new("Frame")
 	Wrapper.Size = UDim2.new(1, 0, 0, 65)
 	Wrapper.BackgroundTransparency = 1
+	Wrapper.ClipsDescendants = true
 	Wrapper.Parent = NotifContainer
 
 	local NotifFrame = Instance.new("Frame")
@@ -704,10 +705,22 @@ local function ShowNotification(textMsg, duration)
 
 	task.delay(duration, function()
 		if NotifFrame and NotifFrame.Parent then
-			NotifFrame:TweenPosition(UDim2.new(1, 320, 0, 0), Enum.EasingDirection.In, Enum.EasingStyle.Quad, 0.3, true)
-			task.wait(0.3)
+			-- 1. Desliza a notificação para a direita
+			NotifFrame:TweenPosition(UDim2.new(1, 320, 0, 0), Enum.EasingDirection.In, Enum.EasingStyle.Quad, 0.25, true)
+			task.wait(0.2)
+
+			-- 2. Encolhe a altura do Wrapper para 0, puxando as notificações de baixo suavemente para cima
 			if Wrapper and Wrapper.Parent then
-				Wrapper:Destroy()
+				local shrinkTween = TweenService:Create(
+					Wrapper,
+					TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+					{Size = UDim2.new(1, 0, 0, 0)}
+				)
+				shrinkTween:Play()
+				shrinkTween.Completed:Wait()
+				if Wrapper and Wrapper.Parent then
+					Wrapper:Destroy()
+				end
 			end
 		end
 	end)
