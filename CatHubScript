@@ -7,9 +7,6 @@ if not getgenv then
 	getgenv = function() return _G end
 end
 
-if not game:IsLoaded() then
-	game.Loaded:Wait()
-end
 local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
