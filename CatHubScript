@@ -621,14 +621,19 @@ if not NotifContainer then
 	NotifContainer.Parent = CatHubGui
 
 	local NotifLayout = Instance.new("UIListLayout")
+	NotifLayout.Name = "NotifLayout"
 	NotifLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	NotifLayout.VerticalAlignment = Enum.VerticalAlignment.Top
 	NotifLayout.Padding = UDim.new(0, 8)
 	NotifLayout.Parent = NotifContainer
 end
 
+local notifCount = 0
+
 local function ShowNotification(textMsg, duration)
 	duration = duration or 5
+	notifCount = notifCount + 1
+	local currentOrder = notifCount
 
 	pcall(function()
 		local sound = Instance.new("Sound")
@@ -640,9 +645,10 @@ local function ShowNotification(textMsg, duration)
 	end)
 
 	local Wrapper = Instance.new("Frame")
+	Wrapper.Name = "NotifWrapper_" .. tostring(currentOrder)
+	Wrapper.LayoutOrder = currentOrder
 	Wrapper.Size = UDim2.new(1, 0, 0, 65)
 	Wrapper.BackgroundTransparency = 1
-	Wrapper.ClipsDescendants = true
 	Wrapper.Parent = NotifContainer
 
 	local NotifFrame = Instance.new("Frame")
@@ -697,30 +703,48 @@ local function ShowNotification(textMsg, duration)
 	TimeBar.BorderSizePixel = 0
 	TimeBar.Parent = TimeBarBg
 
-	NotifFrame:TweenPosition(UDim2.new(0, 5, 0, 0), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.3, true)
+	-- Fluxo sequencial isolado por notificação
+	task.spawn(function()
+		-- 1. Animação de entrada (0.3s)
+		local enterTween = TweenService:Create(
+			NotifFrame,
+			TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingStyle.Out),
+			{Position = UDim2.new(0, 5, 0, 0)}
+		)
+		enterTween:Play()
+		enterTween.Completed:Wait() -- Só começa a contar os 5s DEPOIS de parar na tela
 
-	local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
-	local tween = TweenService:Create(TimeBar, tweenInfo, {Size = UDim2.new(0, 0, 1, 0)})
-	tween:Play()
+		-- 2. Barra de tempo e contagem exata de 5 segundos na tela
+		local barTween = TweenService:Create(
+			TimeBar,
+			TweenInfo.new(duration, Enum.EasingStyle.Linear),
+			{Size = UDim2.new(0, 0, 1, 0)}
+		)
+		barTween:Play()
+		task.wait(duration)
 
-	task.delay(duration, function()
+		-- 3. Animação de saída para a direita (0.25s)
 		if NotifFrame and NotifFrame.Parent then
-			-- 1. Desliza a notificação para a direita
-			NotifFrame:TweenPosition(UDim2.new(1, 320, 0, 0), Enum.EasingDirection.In, Enum.EasingStyle.Quad, 0.25, true)
-			task.wait(0.2)
+			local exitTween = TweenService:Create(
+				NotifFrame,
+				TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingStyle.In),
+				{Position = UDim2.new(1, 320, 0, 0)}
+			)
+			exitTween:Play()
+			exitTween.Completed:Wait()
+		end
 
-			-- 2. Encolhe a altura do Wrapper para 0, puxando as notificações de baixo suavemente para cima
+		-- 4. Encolhe o espaço ocupado (incluindo os 8px de padding) para a de baixo subir suavemente
+		if Wrapper and Wrapper.Parent then
+			local slideUpTween = TweenService:Create(
+				Wrapper,
+				TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+				{Size = UDim2.new(1, 0, 0, -8)}
+			)
+			slideUpTween:Play()
+			slideUpTween.Completed:Wait()
 			if Wrapper and Wrapper.Parent then
-				local shrinkTween = TweenService:Create(
-					Wrapper,
-					TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-					{Size = UDim2.new(1, 0, 0, 0)}
-				)
-				shrinkTween:Play()
-				shrinkTween.Completed:Wait()
-				if Wrapper and Wrapper.Parent then
-					Wrapper:Destroy()
-				end
+				Wrapper:Destroy()
 			end
 		end
 	end)
