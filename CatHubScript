@@ -915,14 +915,13 @@ AddToggle(SecManipulations, "Position Spoof", "PositionSpoof", function(state)
 		local humanoid = char and char:FindFirstChildOfClass("Humanoid")
 		if rootPart and humanoid then
 			if state then
-				rootPart.CFrame = rootPart.CFrame * CFrame.new(0, -2.346, 0)
-				humanoid.HipHeight = 0.05
+				-- Joga levemente para cima para escapar do hitbox das entidades no chão
+				rootPart.CFrame = rootPart.CFrame + Vector3.new(0, 3.5, 0)
 				if RemotesFolder and RemotesFolder:FindFirstChild("Crouch") then
 					RemotesFolder.Crouch:FireServer(true, true)
 				end
 			else
-				rootPart.CFrame = rootPart.CFrame * CFrame.new(0, 2.346, 0)
-				humanoid.HipHeight = 2.396
+				rootPart.CFrame = rootPart.CFrame - Vector3.new(0, 3.5, 0)
 			end
 		end
 	end)
@@ -2001,6 +2000,14 @@ end)
 		end
 	end)
 
+    	-- Alerta se Speed e Crouch Spoof estiverem ativados juntos
+	if CatHubSettings.SpeedEnabled and CatHubSettings.CrouchSpoof and not notifiedSpeedCrouch then
+		notifiedSpeedCrouch = true
+		ShowNotification("Speed Boost can break Crouch Spoof")
+	elseif not (CatHubSettings.SpeedEnabled and CatHubSettings.CrouchSpoof) then
+		notifiedSpeedCrouch = nil
+	end
+
 end)
 
 task.spawn(function()
@@ -2201,8 +2208,8 @@ ToggleButton.InputBegan:Connect(function(input)
 		dragStart = input.Position
 		startPos = ToggleButton.Position
 		
-		input.Changed:Connect(function()
-			if input.UserInputType == Enum.UserInputType.State and input.UserInputType == Enum.UserInputType.UserInputState.End then
+				input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
 				dragging = false
 			end
 		end)
