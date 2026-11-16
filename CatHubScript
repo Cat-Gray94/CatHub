@@ -1900,7 +1900,7 @@ end)
     end)
 
 
-	-- 10. Bypass Screech, A90 & Eyes
+		-- 10. Bypass Screech, A90 & Eyes
 	pcall(function()
 		if settings.BypassScreech then
 			local screech = LocalPlayer.PlayerGui:FindFirstChild("Screech") or workspace:FindFirstChild("Screech")
@@ -1910,12 +1910,9 @@ end)
 			local a90 = LocalPlayer.PlayerGui:FindFirstChild("A90") or workspace:FindFirstChild("A90")
 			if a90 then a90:Destroy() end
 		end
-		-- Bypass Eyes Real (Envia o pacote de olhar para baixo/longe via MotorReplication)
-	pcall(function()
 		if settings.BypassEyes then
 			local eyes = workspace:FindFirstChild("Eyes") or workspace:FindFirstChild("EyesMoving")
 			if eyes and RemotesFolder and RemotesFolder:FindFirstChild("MotorReplication") then
-				-- Verifica se o player está olhando para ele ou se a entidade está ativa
 				RemotesFolder.MotorReplication:FireServer(-650)
 			end
 		end
