@@ -2234,7 +2234,7 @@ end)
 
 -- ==================== AUTO CLOSET ====================
 local entityDistances = {
-	RushMoving = 110,
+	RushMoving = 100,
 	AmbushMoving = 100,
 	BackdoorRush = 100,
 	BashMoving = 125,
